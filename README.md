@@ -2,6 +2,16 @@
 
 Aplikasi lokal untuk mengumpulkan laporan harian berbasis Markdown dan menyusunnya menjadi laporan bulanan yang dapat diekspor ke Markdown atau PDF.
 
+## Tampilan aplikasi
+
+### Ringkasan
+
+![Halaman ringkasan Rangkai Report Studio](docs/images/ringkasan.png)
+
+### Project
+
+![Halaman project Rangkai Report Studio](docs/images/project.png)
+
 ## Menjalankan aplikasi
 
 Persyaratan: Node.js 20+ dan npm.
