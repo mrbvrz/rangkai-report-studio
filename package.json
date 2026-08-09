@@ -41,6 +41,7 @@
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
     "concurrently": "latest",
+    "prettier": "^3.9.6",
     "tailwindcss": "latest",
     "tsx": "latest",
     "typescript": "latest",

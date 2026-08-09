@@ -1,24 +1,231 @@
-import { motion } from 'framer-motion'
-import { Braces, Check, FileStack, Plus, Save, Sparkles } from '../components/heroicons'
-import { useEffect, useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import { api } from '../api'
-import { Button, Card, Field, Input, Textarea } from '../components/ui/index'
-import type { Template } from '../types'
+import { motion } from "framer-motion";
+import {
+  Braces,
+  Check,
+  FileStack,
+  Plus,
+  Save,
+  Sparkles,
+} from "../components/heroicons";
+import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import { api } from "../api";
+import { Button, Card, Field, Input, Textarea } from "../components/ui/index";
+import type { Template } from "../types";
 
-const starter = '# {{title}}\n\n**Periode:** {{period}}\n\n## Ringkasan\n\n{{summary}}\n\n## Aktivitas\n\n{{daily_reports}}\n\n## Lampiran\n\n{{attachments}}'
+const starter =
+  "# {{title}}\n\n**Periode:** {{period}}\n\n## Ringkasan\n\n{{summary}}\n\n## Aktivitas\n\n{{daily_reports}}\n\n## Lampiran\n\n{{attachments}}";
 
 export function Templates() {
-  const [templates, setTemplates] = useState<Template[]>([]), [selected, setSelected] = useState<Template | null>(null), [saved, setSaved] = useState(false)
-  const load = () => api<Template[]>('/templates').then((items) => { setTemplates(items); setSelected((current) => current ? items.find((x) => x.id === current.id) || items[0] : items[0]) })
-  useEffect(() => { void load() }, [])
-  async function save() { if (!selected) return; if (selected.id) await api(`/templates/${selected.id}`, { method: 'PUT', body: JSON.stringify(selected) }); else await api('/templates', { method: 'POST', body: JSON.stringify(selected) }); setSaved(true); window.setTimeout(() => setSaved(false), 2000); await load() }
-  const preview = (selected?.content || '').replaceAll('{{title}}', 'Laporan Bulanan — Juli 2026').replaceAll('{{period}}', 'Juli 2026').replaceAll('{{generated_at}}', '7 Agustus 2026').replaceAll('{{summary}}', 'Ringkasan capaian dan aktivitas utama pada periode berjalan.').replaceAll('{{daily_reports}}', '### 4 Juli — Koordinasi tim\n\nPembahasan progres dan penyelarasan target mingguan.').replaceAll('{{attachments}}', '_Lampiran dokumentasi akan ditampilkan di sini._')
-  return <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .35 }}><div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#e8f2e2] px-3 py-1.5 text-[10px] font-medium uppercase tracking-[.14em] text-[#648054]"><Sparkles size={13} /> Tata letak</div><h1 className="font-display text-3xl font-medium tracking-[-.05em] md:text-4xl">Template laporan</h1><p className="mt-3 max-w-xl text-sm leading-6 text-[#747b72]">Bangun format dokumen yang konsisten untuk setiap laporan bulanan.</p></div><Button $variant="secondary" onClick={() => setSelected({ id: 0, name: 'Template baru', description: '', content: starter, is_default: 0 })}><Plus size={16} /> Template baru</Button></div>
-    <div className="grid gap-5 xl:grid-cols-[270px_minmax(0,1fr)]"><Card className="h-fit overflow-hidden"><div className="border-b border-[#e8ebe4] bg-[#fbfcf9] px-5 py-4"><p className="text-[10px] font-medium uppercase tracking-[.14em] text-[#858d82]">Template tersimpan</p><p className="mt-1 text-xs text-[#8a9087]">{templates.length} format tersedia</p></div><div className="space-y-1 p-2">{templates.map((item) => <button key={item.id} onClick={() => setSelected(item)} className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${selected?.id === item.id ? 'bg-[#eaf3e3] text-[#34452f]' : 'hover:bg-[#f5f6f2]'}`}><div className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${selected?.id === item.id ? 'bg-white text-[#6b8859]' : 'bg-[#f0f3ed] text-[#6d8164]'}`}><FileStack size={16} /></div><div className="min-w-0"><p className="truncate text-sm font-medium">{item.name}</p><p className="mt-1 text-[10px] text-[#899087]">{item.is_default ? 'Template utama' : 'Template kustom'}</p></div></button>)}</div></Card>
-      {selected ? <div className="grid gap-5 2xl:grid-cols-2"><Card className="overflow-hidden"><div className="flex items-center justify-between border-b border-[#e8ebe4] bg-[#fbfcf9] px-6 py-5"><div><p className="text-[10px] font-medium uppercase tracking-[.14em] text-[#809475]">Editor</p><h2 className="mt-1 font-display font-medium">{selected.name || 'Template baru'}</h2></div>{saved && <span className="flex items-center gap-1.5 rounded-full bg-[#e8f3e2] px-3 py-1.5 text-xs font-medium text-[#628151]"><Check size={14} /> Tersimpan</span>}</div><div className="space-y-5 p-6"><Field label="Nama template"><Input value={selected.name} onChange={(e) => setSelected({ ...selected, name: e.target.value })} /></Field><Field label="Deskripsi"><Textarea rows={3} value={selected.description} onChange={(e) => setSelected({ ...selected, description: e.target.value })} placeholder="Jelaskan kapan template ini digunakan…" /></Field><Field label="Struktur Markdown" hint="Gunakan variabel"><Textarea rows={18} className="font-mono !text-[12px] !leading-6" value={selected.content} onChange={(e) => setSelected({ ...selected, content: e.target.value })} /></Field><div className="rounded-2xl border border-[#dfe9d9] bg-[#f1f7ed] p-4"><div className="mb-2 flex items-center gap-2 text-xs font-medium text-[#4f6846]"><Braces size={15} /> Variabel tersedia</div><p className="font-mono text-[10px] leading-6 text-[#697065]">{'{{title}} · {{period}} · {{generated_at}}'}<br />{'{{summary}} · {{daily_reports}} · {{attachments}}'}</p></div><Button className="w-full !rounded-2xl" onClick={save}><Save size={16} /> Simpan template</Button></div></Card><Card className="overflow-hidden"><div className="border-b border-[#e8ebe4] bg-[#fbfcf9] px-6 py-5"><p className="text-[10px] font-medium uppercase tracking-[.14em] text-[#809475]">Preview langsung</p><p className="mt-1 text-xs text-[#858b82]">Contoh hasil dengan data pengganti</p></div><article className="markdown min-h-[640px] bg-white p-7 md:p-10"><ReactMarkdown>{preview}</ReactMarkdown></article></Card></div> : <EmptyStatePlaceholder />}
-    </div>
-  </motion.div>
+  const [templates, setTemplates] = useState<Template[]>([]),
+    [selected, setSelected] = useState<Template | null>(null),
+    [saved, setSaved] = useState(false);
+  const load = () =>
+    api<Template[]>("/templates").then((items) => {
+      setTemplates(items);
+      setSelected((current) =>
+        current ? items.find((x) => x.id === current.id) || items[0] : items[0],
+      );
+    });
+  useEffect(() => {
+    void load();
+  }, []);
+  async function save() {
+    if (!selected) return;
+    if (selected.id)
+      await api(`/templates/${selected.id}`, {
+        method: "PUT",
+        body: JSON.stringify(selected),
+      });
+    else
+      await api("/templates", {
+        method: "POST",
+        body: JSON.stringify(selected),
+      });
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 2000);
+    await load();
+  }
+  const preview = (selected?.content || "")
+    .replaceAll("{{title}}", "Laporan Bulanan — Juli 2026")
+    .replaceAll("{{period}}", "Juli 2026")
+    .replaceAll("{{generated_at}}", "7 Agustus 2026")
+    .replaceAll(
+      "{{summary}}",
+      "Ringkasan capaian dan aktivitas utama pada periode berjalan.",
+    )
+    .replaceAll(
+      "{{daily_reports}}",
+      "### 4 Juli — Koordinasi tim\n\nPembahasan progres dan penyelarasan target mingguan.",
+    )
+    .replaceAll(
+      "{{attachments}}",
+      "_Lampiran dokumentasi akan ditampilkan di sini._",
+    );
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+    >
+      <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+        <div>
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#e8f2e2] px-3 py-1.5 text-[10px] font-medium uppercase tracking-[.14em] text-[#648054]">
+            <Sparkles size={13} /> Tata letak
+          </div>
+          <h1 className="font-display text-3xl font-medium tracking-[-.05em] md:text-4xl">
+            Template laporan
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-[#747b72]">
+            Bangun format dokumen yang konsisten untuk setiap laporan bulanan.
+          </p>
+        </div>
+        <Button
+          $variant="secondary"
+          onClick={() =>
+            setSelected({
+              id: 0,
+              name: "Template baru",
+              description: "",
+              content: starter,
+              is_default: 0,
+            })
+          }
+        >
+          <Plus size={16} /> Template baru
+        </Button>
+      </div>
+      <div className="grid gap-5 xl:grid-cols-[270px_minmax(0,1fr)]">
+        <Card className="h-fit overflow-hidden">
+          <div className="border-b border-[#e8ebe4] bg-[#fbfcf9] px-5 py-4">
+            <p className="text-[10px] font-medium uppercase tracking-[.14em] text-[#858d82]">
+              Template tersimpan
+            </p>
+            <p className="mt-1 text-xs text-[#8a9087]">
+              {templates.length} format tersedia
+            </p>
+          </div>
+          <div className="space-y-1 p-2">
+            {templates.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setSelected(item)}
+                className={`flex w-full items-center gap-3 rounded-xl p-3 text-left transition ${selected?.id === item.id ? "bg-[#eaf3e3] text-[#34452f]" : "hover:bg-[#f5f6f2]"}`}
+              >
+                <div
+                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${selected?.id === item.id ? "bg-white text-[#6b8859]" : "bg-[#f0f3ed] text-[#6d8164]"}`}
+                >
+                  <FileStack size={16} />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{item.name}</p>
+                  <p className="mt-1 text-[10px] text-[#899087]">
+                    {item.is_default ? "Template utama" : "Template kustom"}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </Card>
+        {selected ? (
+          <div className="grid gap-5 2xl:grid-cols-2">
+            <Card className="overflow-hidden">
+              <div className="flex items-center justify-between border-b border-[#e8ebe4] bg-[#fbfcf9] px-6 py-5">
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-[.14em] text-[#809475]">
+                    Editor
+                  </p>
+                  <h2 className="mt-1 font-display font-medium">
+                    {selected.name || "Template baru"}
+                  </h2>
+                </div>
+                {saved && (
+                  <span className="flex items-center gap-1.5 rounded-full bg-[#e8f3e2] px-3 py-1.5 text-xs font-medium text-[#628151]">
+                    <Check size={14} /> Tersimpan
+                  </span>
+                )}
+              </div>
+              <div className="space-y-5 p-6">
+                <Field label="Nama template">
+                  <Input
+                    value={selected.name}
+                    onChange={(e) =>
+                      setSelected({ ...selected, name: e.target.value })
+                    }
+                  />
+                </Field>
+                <Field label="Deskripsi">
+                  <Textarea
+                    rows={3}
+                    value={selected.description}
+                    onChange={(e) =>
+                      setSelected({ ...selected, description: e.target.value })
+                    }
+                    placeholder="Jelaskan kapan template ini digunakan…"
+                  />
+                </Field>
+                <Field label="Struktur Markdown" hint="Gunakan variabel">
+                  <Textarea
+                    rows={18}
+                    className="font-mono !text-[12px] !leading-6"
+                    value={selected.content}
+                    onChange={(e) =>
+                      setSelected({ ...selected, content: e.target.value })
+                    }
+                  />
+                </Field>
+                <div className="rounded-2xl border border-[#dfe9d9] bg-[#f1f7ed] p-4">
+                  <div className="mb-2 flex items-center gap-2 text-xs font-medium text-[#4f6846]">
+                    <Braces size={15} /> Variabel tersedia
+                  </div>
+                  <p className="font-mono text-[10px] leading-6 text-[#697065]">
+                    {"{{title}} · {{period}} · {{generated_at}}"}
+                    <br />
+                    {"{{summary}} · {{daily_reports}} · {{attachments}}"}
+                  </p>
+                </div>
+                <Button className="w-full !rounded-2xl" onClick={save}>
+                  <Save size={16} /> Simpan template
+                </Button>
+              </div>
+            </Card>
+            <Card className="overflow-hidden">
+              <div className="border-b border-[#e8ebe4] bg-[#fbfcf9] px-6 py-5">
+                <p className="text-[10px] font-medium uppercase tracking-[.14em] text-[#809475]">
+                  Preview langsung
+                </p>
+                <p className="mt-1 text-xs text-[#858b82]">
+                  Contoh hasil dengan data pengganti
+                </p>
+              </div>
+              <article className="markdown min-h-[640px] bg-white p-7 md:p-10">
+                <ReactMarkdown>{preview}</ReactMarkdown>
+              </article>
+            </Card>
+          </div>
+        ) : (
+          <EmptyStatePlaceholder />
+        )}
+      </div>
+    </motion.div>
+  );
 }
 
-function EmptyStatePlaceholder() { return <div className="grid min-h-[620px] place-items-center rounded-[18px] border border-dashed border-[#d7dbd2] bg-white/45 p-8 text-center"><div><div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-3xl bg-[#e7f2df] text-[#698457]"><FileStack size={26} /></div><h2 className="font-display text-lg font-medium">Pilih template untuk mulai</h2><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#747b72]">Pilih template di panel kiri atau buat template baru untuk melihat editor dan preview.</p></div></div> }
+function EmptyStatePlaceholder() {
+  return (
+    <div className="grid min-h-[620px] place-items-center rounded-[18px] border border-dashed border-[#d7dbd2] bg-white/45 p-8 text-center">
+      <div>
+        <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-3xl bg-[#e7f2df] text-[#698457]">
+          <FileStack size={26} />
+        </div>
+        <h2 className="font-display text-lg font-medium">
+          Pilih template untuk mulai
+        </h2>
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#747b72]">
+          Pilih template di panel kiri atau buat template baru untuk melihat
+          editor dan preview.
+        </p>
+      </div>
+    </div>
+  );
+}

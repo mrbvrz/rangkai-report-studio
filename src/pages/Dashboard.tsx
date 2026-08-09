@@ -1,32 +1,258 @@
-import { Link } from '@tanstack/react-router'
-import { motion } from 'framer-motion'
-import { ArrowRight, CalendarRange, FileImage, FileText, Plus, Sparkles } from '../components/heroicons'
-import { useEffect, useState } from 'react'
-import { api, displayDate } from '../api'
-import { Button, Card } from '../components/ui/index'
-import { AreaChart, ContributionChart, HeatLegend, ProjectDistributionChart, type DailyPoint, type MonthlyPoint, type ProjectSeries } from '../components/DashboardCharts'
-import type { Report } from '../types'
+import { Link } from "@tanstack/react-router";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  CalendarRange,
+  FileImage,
+  FileText,
+  Plus,
+  Sparkles,
+} from "../components/heroicons";
+import { useEffect, useState } from "react";
+import { api, displayDate } from "../api";
+import { Button, Card } from "../components/ui/index";
+import {
+  AreaChart,
+  ContributionChart,
+  HeatLegend,
+  ProjectDistributionChart,
+  type DailyPoint,
+  type MonthlyPoint,
+  type ProjectSeries,
+} from "../components/DashboardCharts";
+import type { Report } from "../types";
 
-type Stats = { reports: number; published: number; attachments: number; months: number }
-type Analytics = { year?: number; monthly: MonthlyPoint[]; projects: ProjectSeries[]; daily: DailyPoint[]; totalLastYear: number }
+type Stats = {
+  reports: number;
+  published: number;
+  attachments: number;
+  months: number;
+};
+type Analytics = {
+  year?: number;
+  monthly: MonthlyPoint[];
+  projects: ProjectSeries[];
+  daily: DailyPoint[];
+  totalLastYear: number;
+};
 export function Dashboard() {
-  const [stats, setStats] = useState<Stats>({ reports: 0, published: 0, attachments: 0, months: 0 })
-  const [reports, setReports] = useState<Report[]>([])
-  const [analytics, setAnalytics] = useState<Analytics>({ monthly: [], projects: [], daily: [], totalLastYear: 0 })
-  useEffect(() => { api<Stats>('/dashboard-summary').then(setStats); api<Analytics>('/dashboard-analytics').then(setAnalytics); api<Report[]>('/reports?summary=1').then((data) => setReports(data.slice(0, 4))) }, [])
+  const [stats, setStats] = useState<Stats>({
+    reports: 0,
+    published: 0,
+    attachments: 0,
+    months: 0,
+  });
+  const [reports, setReports] = useState<Report[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics>({
+    monthly: [],
+    projects: [],
+    daily: [],
+    totalLastYear: 0,
+  });
+  useEffect(() => {
+    api<Stats>("/dashboard-summary").then(setStats);
+    api<Analytics>("/dashboard-analytics").then(setAnalytics);
+    api<Report[]>("/reports?summary=1").then((data) =>
+      setReports(data.slice(0, 4)),
+    );
+  }, []);
   const cards = [
-    { label: 'Laporan harian', value: stats.reports, icon: FileText, color: 'bg-[#e9f3df] text-[#5e7e4b]' },
-    { label: 'Sudah final', value: stats.published, icon: Sparkles, color: 'bg-[#fff1d7] text-[#9e6a14]' },
-    { label: 'Lampiran', value: stats.attachments, icon: FileImage, color: 'bg-[#e8eff8] text-[#53759b]' },
-    { label: 'Periode dibuat', value: stats.months, icon: CalendarRange, color: 'bg-[#f2eaf7] text-[#785990]' },
-  ]
-  return <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-    <section className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="mb-2 text-xs font-medium uppercase tracking-[.16em] text-[#789168]">Selamat datang kembali</p><h1 className="font-display text-3xl font-medium tracking-[-.04em] md:text-4xl">Laporan rapi, tanpa repot.</h1><p className="mt-3 max-w-xl text-sm leading-6 text-[#747a71]">Kumpulkan catatan harian, rangkai cerita bulanan, lalu ekspor menjadi dokumen profesional.</p></div><Link to="/reports/new"><Button><Plus size={17} /> Laporan baru</Button></Link></section>
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{cards.map(({ label, value, icon: Icon, color }, i) => <Card key={label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * .06 }} className="p-5"><div className="flex items-start justify-between"><div><p className="text-xs font-medium text-[#838980]">{label}</p><p className="font-display mt-2 text-3xl font-medium tracking-[-.04em]">{value}</p></div><div className={`grid h-10 w-10 place-items-center rounded-xl ${color}`}><Icon size={18} /></div></div></Card>)}</div>
-    <div className="mt-7 space-y-5"><Card className="w-full overflow-hidden p-5 md:p-6"><div className="mb-4 flex items-start justify-between"><div><h2 className="font-display font-medium">Tren laporan per project</h2><p className="mt-1 text-xs text-[#858b82]">Perbandingan laporan setiap project dari Januari sampai Desember {analytics.year || ''}</p></div><span className="rounded-full bg-[#edf3e9] px-3 py-1.5 text-xs font-medium text-[#5f7852]">Jan–Des</span></div><AreaChart data={analytics.monthly} projects={analytics.projects} /></Card><div className="grid gap-5 xl:grid-cols-2"><Card className="min-w-0 overflow-hidden p-5 md:p-6"><div className="mb-4"><h2 className="font-display font-medium">Distribusi per project</h2><p className="mt-1 text-xs text-[#858b82]">Komposisi laporan tahun {analytics.year || 'berjalan'}</p></div><ProjectDistributionChart projects={analytics.projects} /></Card><Card className="min-w-0 overflow-hidden p-5 md:p-6"><div className="mb-5"><div className="flex items-start justify-between gap-3"><div><h2 className="font-display font-medium">Konsistensi harian</h2><p className="mt-1 text-xs text-[#858b82]">Aktivitas harian Januari–Desember {analytics.year || ''}</p></div><p className="font-display text-2xl font-medium text-[#526b47]">{analytics.totalLastYear}</p></div></div><ContributionChart data={analytics.daily} /><div className="mt-2 flex justify-end"><HeatLegend /></div></Card></div></div>
-    <div className="mt-5 grid gap-5 xl:grid-cols-[1.55fr_.8fr]">
-      <Card className="overflow-hidden"><div className="flex items-center justify-between border-b border-[#eceee8] p-5"><div><h2 className="font-display font-medium">Aktivitas terbaru</h2><p className="mt-1 text-xs text-[#858b82]">Laporan harian yang terakhir diperbarui</p></div><Link to="/reports" className="text-xs font-medium text-[#607c50]">Lihat semua</Link></div><div>{reports.length ? reports.map((report) => <Link key={report.id} to="/reports/$reportId" params={{ reportId: String(report.id) }} className="group flex items-center gap-4 border-b border-[#f0f1ec] px-5 py-4 last:border-0 hover:bg-[#fafbf8]"><div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f0f3ec] text-[#66735f]"><FileText size={17} /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{report.title}</p><p className="mt-1 text-xs text-[#8a9087]">{displayDate(report.report_date)} · {report.attachments.length} lampiran</p></div><span className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${report.status === 'published' ? 'bg-[#e8f4df] text-[#577c44]' : 'bg-[#f1f1ed] text-[#7c8179]'}`}>{report.status === 'published' ? 'Final' : 'Draf'}</span><ArrowRight size={15} className="text-[#aeb3aa] transition group-hover:translate-x-1" /></Link>) : <div className="p-10 text-center text-sm text-[#848a81]">Belum ada aktivitas. Mulai dari laporan pertama Anda.</div>}</div></Card>
-      <Card className="relative overflow-hidden bg-[#293027] p-6 text-white"><div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[#c9ed9f]/10" /><div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#c9ed9f] text-[#263022]"><Sparkles size={20} /></div><h2 className="font-display mt-8 text-xl font-medium">Rangkai bulan ini</h2><p className="mt-3 text-sm leading-6 text-[#bbc3b7]">Gabungkan semua laporan harian menjadi satu dokumen utuh, lengkap dengan ringkasan AI.</p><Link to="/monthly" className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-[#d4f5af]">Buat laporan bulanan <ArrowRight size={16} /></Link></Card>
-    </div>
-  </motion.div>
+    {
+      label: "Laporan harian",
+      value: stats.reports,
+      icon: FileText,
+      color: "bg-[#e9f3df] text-[#5e7e4b]",
+    },
+    {
+      label: "Sudah final",
+      value: stats.published,
+      icon: Sparkles,
+      color: "bg-[#fff1d7] text-[#9e6a14]",
+    },
+    {
+      label: "Lampiran",
+      value: stats.attachments,
+      icon: FileImage,
+      color: "bg-[#e8eff8] text-[#53759b]",
+    },
+    {
+      label: "Periode dibuat",
+      value: stats.months,
+      icon: CalendarRange,
+      color: "bg-[#f2eaf7] text-[#785990]",
+    },
+  ];
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+      <section className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+        <div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-[.16em] text-[#789168]">
+            Selamat datang kembali
+          </p>
+          <h1 className="font-display text-3xl font-medium tracking-[-.04em] md:text-4xl">
+            Laporan rapi, tanpa repot.
+          </h1>
+          <p className="mt-3 max-w-xl text-sm leading-6 text-[#747a71]">
+            Kumpulkan catatan harian, rangkai cerita bulanan, lalu ekspor
+            menjadi dokumen profesional.
+          </p>
+        </div>
+        <Link to="/reports/new">
+          <Button>
+            <Plus size={17} /> Laporan baru
+          </Button>
+        </Link>
+      </section>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map(({ label, value, icon: Icon, color }, i) => (
+          <Card
+            key={label}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.06 }}
+            className="p-5"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs font-medium text-[#838980]">{label}</p>
+                <p className="font-display mt-2 text-3xl font-medium tracking-[-.04em]">
+                  {value}
+                </p>
+              </div>
+              <div
+                className={`grid h-10 w-10 place-items-center rounded-xl ${color}`}
+              >
+                <Icon size={18} />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <div className="mt-7 space-y-5">
+        <Card className="w-full overflow-hidden p-5 md:p-6">
+          <div className="mb-4 flex items-start justify-between">
+            <div>
+              <h2 className="font-display font-medium">
+                Tren laporan per project
+              </h2>
+              <p className="mt-1 text-xs text-[#858b82]">
+                Perbandingan laporan setiap project dari Januari sampai Desember{" "}
+                {analytics.year || ""}
+              </p>
+            </div>
+            <span className="rounded-full bg-[#edf3e9] px-3 py-1.5 text-xs font-medium text-[#5f7852]">
+              Jan–Des
+            </span>
+          </div>
+          <AreaChart data={analytics.monthly} projects={analytics.projects} />
+        </Card>
+        <div className="grid gap-5 xl:grid-cols-2">
+          <Card className="min-w-0 overflow-hidden p-5 md:p-6">
+            <div className="mb-4">
+              <h2 className="font-display font-medium">
+                Distribusi per project
+              </h2>
+              <p className="mt-1 text-xs text-[#858b82]">
+                Komposisi laporan tahun {analytics.year || "berjalan"}
+              </p>
+            </div>
+            <ProjectDistributionChart projects={analytics.projects} />
+          </Card>
+          <Card className="min-w-0 overflow-hidden p-5 md:p-6">
+            <div className="mb-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-display font-medium">
+                    Konsistensi harian
+                  </h2>
+                  <p className="mt-1 text-xs text-[#858b82]">
+                    Aktivitas harian Januari–Desember {analytics.year || ""}
+                  </p>
+                </div>
+                <p className="font-display text-2xl font-medium text-[#526b47]">
+                  {analytics.totalLastYear}
+                </p>
+              </div>
+            </div>
+            <ContributionChart data={analytics.daily} />
+            <div className="mt-2 flex justify-end">
+              <HeatLegend />
+            </div>
+          </Card>
+        </div>
+      </div>
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1.55fr_.8fr]">
+        <Card className="overflow-hidden">
+          <div className="flex items-center justify-between border-b border-[#eceee8] p-5">
+            <div>
+              <h2 className="font-display font-medium">Aktivitas terbaru</h2>
+              <p className="mt-1 text-xs text-[#858b82]">
+                Laporan harian yang terakhir diperbarui
+              </p>
+            </div>
+            <Link to="/reports" className="text-xs font-medium text-[#607c50]">
+              Lihat semua
+            </Link>
+          </div>
+          <div>
+            {reports.length ? (
+              reports.map((report) => (
+                <Link
+                  key={report.id}
+                  to="/reports/$reportId"
+                  params={{ reportId: String(report.id) }}
+                  className="group flex items-center gap-4 border-b border-[#f0f1ec] px-5 py-4 last:border-0 hover:bg-[#fafbf8]"
+                >
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#f0f3ec] text-[#66735f]">
+                    <FileText size={17} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {report.title}
+                    </p>
+                    <p className="mt-1 text-xs text-[#8a9087]">
+                      {displayDate(report.report_date)} ·{" "}
+                      {report.attachments.length} lampiran
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${report.status === "published" ? "bg-[#e8f4df] text-[#577c44]" : "bg-[#f1f1ed] text-[#7c8179]"}`}
+                  >
+                    {report.status === "published" ? "Final" : "Draf"}
+                  </span>
+                  <ArrowRight
+                    size={15}
+                    className="text-[#aeb3aa] transition group-hover:translate-x-1"
+                  />
+                </Link>
+              ))
+            ) : (
+              <div className="p-10 text-center text-sm text-[#848a81]">
+                Belum ada aktivitas. Mulai dari laporan pertama Anda.
+              </div>
+            )}
+          </div>
+        </Card>
+        <Card className="relative overflow-hidden bg-[#293027] p-6 text-white">
+          <div className="absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[#c9ed9f]/10" />
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#c9ed9f] text-[#263022]">
+            <Sparkles size={20} />
+          </div>
+          <h2 className="font-display mt-8 text-xl font-medium">
+            Rangkai bulan ini
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-[#bbc3b7]">
+            Gabungkan semua laporan harian menjadi satu dokumen utuh, lengkap
+            dengan ringkasan AI.
+          </p>
+          <Link
+            to="/monthly"
+            className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-[#d4f5af]"
+          >
+            Buat laporan bulanan <ArrowRight size={16} />
+          </Link>
+        </Card>
+      </div>
+    </motion.div>
+  );
 }
