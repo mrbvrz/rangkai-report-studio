@@ -3,12 +3,14 @@ import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
+  Check,
   Eye,
   FileUp,
   ImagePlus,
   Loader2,
   Save,
   Send,
+  Sparkles,
   X,
 } from "../components/heroicons";
 import { useEffect, useRef, useState } from "react";
@@ -24,6 +26,18 @@ import {
   Textarea,
 } from "../components/ui/index";
 import type { Project, Report } from "../types";
+import { useSecurity } from "../security";
+
+type AiAction = "improve" | "expand" | "summarize" | "structure" | "translate" | "continue";
+
+const aiActions: { id: AiAction; label: string; desc: string; icon: string }[] = [
+  { id: "improve", label: "Perbaiki", desc: "Tingkatkan kejelasan & profesionalitas", icon: "✨" },
+  { id: "expand", label: "Kembangkan", desc: "Ubah poin-poin jadi laporan lengkap", icon: "📝" },
+  { id: "summarize", label: "Ringkas", desc: "Buat ringkasan eksekutif", icon: "📋" },
+  { id: "structure", label: "Strukturkan", desc: "Format jadi laporan standar", icon: "🏗️" },
+  { id: "translate", label: "Terjemahkan", desc: "Ke Bahasa Indonesia profesional", icon: "🌐" },
+  { id: "continue", label: "Lanjutkan", desc: "Tulis kelanjutan alur penulisan", icon: "➡️" },
+];
 
 type Values = {
   projectId: string;
@@ -43,6 +57,12 @@ export function ReportEditor() {
     [attachments, setAttachments] = useState<Report["attachments"]>([]),
     [notice, setNotice] = useState("");
   const [projects, setProjects] = useState<Project[]>([]);
+  const security = useSecurity();
+  const [aiBusy, setAiBusy] = useState(false),
+    [aiAction, setAiAction] = useState<AiAction>("improve"),
+    [aiContext, setAiContext] = useState(""),
+    [aiResult, setAiResult] = useState(""),
+    [aiError, setAiError] = useState("");
   const form = useForm({
     defaultValues: {
       projectId: "",
@@ -95,6 +115,34 @@ export function ReportEditor() {
       setAttachments(r.attachments);
     });
   }, [reportId]);
+
+  async function runAiWriting() {
+    const content = form.getFieldValue("content");
+    if (!content.trim()) return setAiError("Isi laporan kosong.");
+    const saved = await security.readAiConfig<{ provider?: string; apiKey?: string; model?: string; baseUrl?: string }>();
+    if (!saved.apiKey || !saved.model) return setAiError("Konfigurasi AI belum disimpan di Pengaturan.");
+    setAiBusy(true);
+    setAiError("");
+    try {
+      const res = await api<{ result: string }>("/api/ai/write", {
+        method: "POST",
+        body: JSON.stringify({ content, action: aiAction, context: aiContext, ai: saved }),
+      });
+      setAiResult(res.result);
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : "Gagal memproses dengan AI.");
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  function applyAiResult() {
+    if (!aiResult) return;
+    form.setFieldValue("content", aiResult);
+    setAiResult("");
+    setNotice("Hasil AI diterapkan ke editor.");
+    window.setTimeout(() => setNotice(""), 2500);
+  }
   function importMarkdown(file?: File) {
     if (!file) return;
     file.text().then((content) => {
@@ -267,6 +315,66 @@ export function ReportEditor() {
                 </Field>
               )}
             </form.Field>
+            <Card className="border-[#eef3ec] bg-[#f7fbf5]">
+              <div className="mb-4 flex items-center gap-2">
+                <span className="text-sm font-medium text-[#4f6340]">✨ AI Writing Assistant</span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-[1fr_180px]">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {aiActions.map((action) => (
+                      <button
+                        key={action.id}
+                        type="button"
+                        onClick={() => setAiAction(action.id)}
+                        className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition ${
+                          aiAction === action.id
+                            ? "border-[#6c8f58] bg-[#e8f3de] text-[#3a5230]"
+                            : "border-[#d8e0d3] bg-white text-[#5a6555] hover:border-[#b9cfac] hover:bg-[#f0f7eb]"
+                        }`}
+                      >
+                        <span>{action.icon}</span>
+                        <span>{action.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <Textarea
+                    rows={2}
+                    value={aiContext}
+                    onChange={(e) => setAiContext(e.target.value)}
+                    placeholder="Konteks tambahan (opsional): tujuan audiens, poin khusus, dll."
+                    className="!text-[12px]"
+                  />
+                  {aiError && (
+                    <p className="text-xs text-red-600">{aiError}</p>
+                  )}
+                  <Button
+                    onClick={runAiWriting}
+                    disabled={aiBusy || !form.getFieldValue("content").trim()}
+                    className="w-full md:w-auto"
+                  >
+                    {aiBusy ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
+                    {aiBusy ? "Memproses…" : "Jalankan AI"}
+                  </Button>
+                </div>
+                {aiResult && (
+                  <div className="md:col-span-1 space-y-3 border-l-2 border-[#c8ed9e] pl-4">
+                    <div className="text-xs font-medium text-[#5a7a45]">Hasil AI</div>
+                    <div className="max-h-60 overflow-auto bg-white rounded-xl border border-[#e0e8d9] p-3 text-sm leading-6 whitespace-pre-wrap font-mono">
+                      {aiResult}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button $variant="secondary" onClick={applyAiResult} className="w-full md:w-auto">
+                        <Check size={14} /> Terapkan ke editor
+                      </Button>
+                      <Button $variant="secondary" onClick={() => setAiResult("")} className="w-full md:w-auto">
+                        <X size={14} /> Buang
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
             <div className="grid gap-4 md:grid-cols-2">
               <form.Field name="tags">
                 {(field) => (

@@ -1004,6 +1004,142 @@ async function generateAiSummary(ai: AiSettings, raw: unknown) {
   );
 }
 
+type AiWritingAction = "improve" | "expand" | "summarize" | "structure" | "translate" | "continue";
+
+async function generateAiWriting(ai: AiSettings, content: string, action: AiWritingAction, context?: string) {
+  if (!ai.apiKey || !ai.baseUrl || !ai.model)
+    throw new Error("Konfigurasi AI belum lengkap.");
+
+  const prompts: Record<AiWritingAction, string> = {
+    improve: "Perbaiki tulisan berikut agar lebih profesional, jelas, dan terstruktur. Pertahankan makna aslinya. Tulis dalam Bahasa Indonesia.",
+    expand: "Kembangkan catatan/poin-poin berikut menjadi laporan harian yang lengkap, detail, dan terstruktur dengan bahasa profesional Indonesia. Tambahkan konteks, detail aktivitas, dan format yang sesuai untuk laporan kerja.",
+    summarize: "Buat ringkasan eksekutif singkat (2-3 paragraf) dari laporan berikut. Fokus pada pencapaian utama, temuan kunci, dan tindak lanjut. Bahasa Indonesia profesional.",
+    structure: "Strukturkan konten berikut menjadi format laporan harian standar dengan heading yang jelas (Aktivitas, Hasil, Kendala, Tindak Lanjut). Gunakan Markdown. Bahasa Indonesia.",
+    translate: "Terjemahkan konten berikut ke Bahasa Indonesia yang natural dan profesional untuk konteks laporan kerja.",
+    continue: "Lanjutkan penulisan laporan berikut secara natural berdasarkan konteks dan alur yang sudah ada. Pertahankan gaya bahasa dan format yang sama.",
+  };
+
+  const system = prompts[action];
+  const input = context ? `${system}\n\nKonteks tambahan: ${context}\n\nKonten:\n${content}` : `${system}\n\nKonten:\n${content}`;
+
+  const baseUrl = ai.baseUrl.replace(/\/$/, "");
+  if (ai.provider === "gemini") {
+    const response = await fetch(
+      `${baseUrl}/models/${encodeURIComponent(ai.model)}:generateContent?key=${encodeURIComponent(ai.apiKey)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ parts: [{ text: input }] }] }),
+      },
+    );
+    if (!response.ok) throw new Error(`Gemini merespons ${response.status}.`);
+    const data = (await response.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    return (
+      data.candidates?.[0]?.content?.parts
+        ?.map((part) => part.text || "")
+        .join("") || ""
+    );
+  }
+  if (ai.provider === "anthropic") {
+    const response = await fetch(`${baseUrl}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ai.apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: ai.model,
+        max_tokens: 2000,
+        system,
+        messages: [{ role: "user", content: input }],
+      }),
+    });
+    if (!response.ok) throw new Error(`Claude merespons ${response.status}.`);
+    const data = (await response.json()) as {
+      content?: { type: string; text?: string }[];
+    };
+    return (
+      data.content
+        ?.filter((item) => item.type === "text")
+        .map((item) => item.text || "")
+        .join("") || ""
+    );
+  }
+  if (ai.provider === "openrouter") {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ai.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: ai.model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: input },
+        ],
+      }),
+    });
+    if (!response.ok)
+      throw new Error(`OpenRouter merespons ${response.status}.`);
+    const data = (await response.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    return data.choices?.[0]?.message?.content || "";
+  }
+  const response = await fetch(`${baseUrl}/responses`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${ai.apiKey}`,
+    },
+    body: JSON.stringify({
+      model: ai.model,
+      instructions: system,
+      input,
+    }),
+  });
+  if (!response.ok) throw new Error(`OpenAI merespons ${response.status}.`);
+  const data = (await response.json()) as {
+    output_text?: string;
+    output?: { content?: { type: string; text?: string }[] }[];
+  };
+  return (
+    data.output_text ||
+    data.output
+      ?.flatMap((item) => item.content || [])
+      .filter((item) => item.type === "output_text")
+      .map((item) => item.text || "")
+      .join("") ||
+    ""
+  );
+}
+
+app.post("/api/ai/write", async (req, res) => {
+  try {
+    const { content, action, context, ai } = req.body as {
+      content: string;
+      action: AiWritingAction;
+      context?: string;
+      ai: AiSettings;
+    };
+    if (!content || !action)
+      return res.status(400).json({ message: "Konten dan aksi wajib diisi." });
+    const result = await generateAiWriting(ai, content, action, context);
+    res.json({ result });
+  } catch (error) {
+    res
+      .status(400)
+      .json({
+        message:
+          error instanceof Error ? error.message : "Gagal memproses dengan AI.",
+      });
+  }
+});
+
 app.post("/api/monthly/generate", async (req, res) => {
   try {
     const { month, templateId, projectId, useAi = false, ai = {} } = req.body;
