@@ -5,16 +5,10 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  lazyRouteComponent,
   RouterProvider,
 } from "@tanstack/react-router";
 import { Layout } from "./components/Layout";
-import { Dashboard } from "./pages/Dashboard";
-import { Reports } from "./pages/Reports";
-import { ReportEditor } from "./pages/ReportEditor";
-import { Monthly } from "./pages/Monthly";
-import { Templates } from "./pages/Templates";
-import { Settings } from "./pages/Settings";
-import { Projects } from "./pages/Projects";
 import "./styles.css";
 import { SecurityProvider } from "./security";
 import { registerSW } from "virtual:pwa-register";
@@ -44,45 +38,49 @@ function SmoothScroll({ children }: { children: React.ReactNode }) {
 }
 
 const rootRoute = createRootRoute({ component: Layout });
+const reportEditor = lazyRouteComponent(
+  () => import("./pages/ReportEditor"),
+  "ReportEditor",
+);
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: Dashboard,
+  component: lazyRouteComponent(() => import("./pages/Dashboard"), "Dashboard"),
 });
 const reportsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reports",
-  component: Reports,
+  component: lazyRouteComponent(() => import("./pages/Reports"), "Reports"),
 });
 const projectsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/projects",
-  component: Projects,
+  component: lazyRouteComponent(() => import("./pages/Projects"), "Projects"),
 });
 const newReportRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reports/new",
-  component: ReportEditor,
+  component: reportEditor,
 });
 const editReportRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reports/$reportId",
-  component: ReportEditor,
+  component: reportEditor,
 });
 const monthlyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/monthly",
-  component: Monthly,
+  component: lazyRouteComponent(() => import("./pages/Monthly"), "Monthly"),
 });
 const templatesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/templates",
-  component: Templates,
+  component: lazyRouteComponent(() => import("./pages/Templates"), "Templates"),
 });
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
-  component: Settings,
+  component: lazyRouteComponent(() => import("./pages/Settings"), "Settings"),
 });
 const routeTree = rootRoute.addChildren([
   indexRoute,
