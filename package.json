@@ -13,7 +13,8 @@
     "lint": "tsc --noEmit -p tsconfig.app.json --pretty false && tsc --noEmit -p tsconfig.node.json --pretty false && eslint .",
     "format": "prettier --write .",
     "prepare": "husky",
-    "lint:eslint": "eslint ."
+    "lint:eslint": "eslint .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
