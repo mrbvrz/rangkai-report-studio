@@ -1,7 +1,7 @@
-import styled from "styled-components";
-import { motion } from "framer-motion";
-import { ChevronDown } from "./heroicons";
-import { CalendarDays, ChevronLeft, ChevronRight } from "./heroicons";
+import styled from "styled-components"
+import { motion } from "framer-motion"
+import { ChevronDown } from "./heroicons"
+import { CalendarDays, ChevronLeft, ChevronRight } from "./heroicons"
 import {
   Children,
   isValidElement,
@@ -13,10 +13,10 @@ import {
   type ReactElement,
   type ReactNode,
   type SelectHTMLAttributes,
-} from "react";
+} from "react"
 
 export const Button = styled.button<{
-  $variant?: "primary" | "secondary" | "ghost" | "danger" | "warning";
+  $variant?: "primary" | "secondary" | "ghost" | "danger" | "warning"
 }>`
   display: inline-flex;
   align-items: center;
@@ -42,14 +42,14 @@ export const Button = styled.button<{
     cursor: not-allowed;
     transform: none;
   }
-`;
+`
 
 export const Card = styled(motion.div)`
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid #e5e7e0;
   border-radius: 18px;
   box-shadow: 0 1px 2px rgba(30, 35, 28, 0.025);
-`;
+`
 
 export const Input = styled.input`
   width: 100%;
@@ -65,23 +65,23 @@ export const Input = styled.input`
     border-color: #809970;
     box-shadow: 0 0 0 3px #edf5e8;
   }
-`;
+`
 type PickerProps = {
-  type?: string;
-  value?: string;
-  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
-  className?: string;
-  placeholder?: string;
-  disabled?: boolean;
-};
+  type?: string
+  value?: string
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void
+  className?: string
+  placeholder?: string
+  disabled?: boolean
+}
 function emitPickerChange(onChange: PickerProps["onChange"], value: string) {
-  onChange?.({ target: { value } } as ChangeEvent<HTMLInputElement>);
+  onChange?.({ target: { value } } as ChangeEvent<HTMLInputElement>)
 }
 function monthLabel(year: number, month: number) {
   return new Intl.DateTimeFormat("id-ID", {
     month: "long",
     year: "numeric",
-  }).format(new Date(year, month, 1));
+  }).format(new Date(year, month, 1))
 }
 function CalendarPicker({
   mode,
@@ -95,52 +95,42 @@ function CalendarPicker({
     ? mode === "date"
       ? new Date(`${value}T00:00:00`)
       : new Date(`${value}-01T00:00:00`)
-    : new Date();
+    : new Date()
   const [open, setOpen] = useState(false),
-    [cursor, setCursor] = useState(
-      new Date(initial.getFullYear(), initial.getMonth(), 1),
-    ),
-    ref = useRef<HTMLDivElement>(null);
+    [cursor, setCursor] = useState(new Date(initial.getFullYear(), initial.getMonth(), 1)),
+    ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (value) {
       const next =
-        mode === "date"
-          ? new Date(`${value}T00:00:00`)
-          : new Date(`${value}-01T00:00:00`);
-      if (!Number.isNaN(next.getTime()))
-        setCursor(new Date(next.getFullYear(), next.getMonth(), 1));
+        mode === "date" ? new Date(`${value}T00:00:00`) : new Date(`${value}-01T00:00:00`)
+      if (!Number.isNaN(next.getTime())) setCursor(new Date(next.getFullYear(), next.getMonth(), 1))
     }
-  }, [value, mode]);
+  }, [value, mode])
   useEffect(() => {
     const close = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node))
-        setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener("mousedown", close)
+    return () => document.removeEventListener("mousedown", close)
+  }, [])
   const year = cursor.getFullYear(),
-    month = cursor.getMonth();
+    month = cursor.getMonth()
   const chooseMonth = (nextMonth: number) => {
-    const next = `${year}-${String(nextMonth + 1).padStart(2, "0")}`;
-    emitPickerChange(onChange, next);
-    setOpen(false);
-  };
+    const next = `${year}-${String(nextMonth + 1).padStart(2, "0")}`
+    emitPickerChange(onChange, next)
+    setOpen(false)
+  }
   const chooseDate = (day: number) => {
-    const next = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    emitPickerChange(onChange, next);
-    setOpen(false);
-  };
+    const next = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+    emitPickerChange(onChange, next)
+    setOpen(false)
+  }
   const days =
     mode === "date"
-      ? Array.from(
-          { length: new Date(year, month + 1, 0).getDate() },
-          (_, i) => i + 1,
-        )
-      : [];
-  const leading =
-    mode === "date" ? (new Date(year, month, 1).getDay() + 6) % 7 : 0;
-  const months = Array.from({ length: 12 }, (_, i) => i);
+      ? Array.from({ length: new Date(year, month + 1, 0).getDate() }, (_, i) => i + 1)
+      : []
+  const leading = mode === "date" ? (new Date(year, month, 1).getDay() + 6) % 7 : 0
+  const months = Array.from({ length: 12 }, (_, i) => i)
   const display =
     mode === "date" && value
       ? new Intl.DateTimeFormat("id-ID", {
@@ -150,7 +140,7 @@ function CalendarPicker({
         }).format(new Date(`${value}T00:00:00`))
       : mode === "month" && value
         ? monthLabel(Number(value.slice(0, 4)), Number(value.slice(5, 7)) - 1)
-        : placeholder || (mode === "date" ? "Pilih tanggal" : "Pilih bulan");
+        : placeholder || (mode === "date" ? "Pilih tanggal" : "Pilih bulan")
   return (
     <div ref={ref} className={`relative ${className}`}>
       <button
@@ -210,7 +200,7 @@ function CalendarPicker({
                   <span key={`empty-${i}`} />
                 ))}
                 {days.map((day) => {
-                  const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                  const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
                   return (
                     <button
                       type="button"
@@ -220,7 +210,7 @@ function CalendarPicker({
                     >
                       {day}
                     </button>
-                  );
+                  )
                 })}
               </div>
             </>
@@ -228,13 +218,13 @@ function CalendarPicker({
         </div>
       )}
     </div>
-  );
+  )
 }
 export function DatePicker(props: PickerProps) {
-  return <CalendarPicker {...props} mode="date" />;
+  return <CalendarPicker {...props} mode="date" />
 }
 export function MonthPicker(props: PickerProps) {
-  return <CalendarPicker {...props} mode="month" />;
+  return <CalendarPicker {...props} mode="month" />
 }
 export const Textarea = styled.textarea`
   width: 100%;
@@ -250,11 +240,11 @@ export const Textarea = styled.textarea`
     border-color: #809970;
     box-shadow: 0 0 0 3px #edf5e8;
   }
-`;
+`
 type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
-  dropUp?: boolean;
-  compact?: boolean;
-};
+  dropUp?: boolean
+  compact?: boolean
+}
 export function Select({
   value,
   onChange,
@@ -265,35 +255,32 @@ export function Select({
   ...props
 }: SelectProps) {
   const [open, setOpen] = useState(false),
-    ref = useRef<HTMLDivElement>(null);
+    ref = useRef<HTMLDivElement>(null)
   const options = Children.toArray(children)
     .filter(
       (
         child,
       ): child is ReactElement<{
-        value?: string | number;
-        children?: ReactNode;
+        value?: string | number
+        children?: ReactNode
       }> => isValidElement(child),
     )
     .map((child) => ({
       value: String(child.props.value ?? ""),
       label: child.props.children,
-    }));
-  const current =
-    options.find((option) => option.value === String(value ?? "")) ||
-    options[0];
+    }))
+  const current = options.find((option) => option.value === String(value ?? "")) || options[0]
   useEffect(() => {
     const close = (event: MouseEvent) => {
-      if (ref.current && !ref.current.contains(event.target as Node))
-        setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, []);
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener("mousedown", close)
+    return () => document.removeEventListener("mousedown", close)
+  }, [])
   const choose = (next: string) => {
-    onChange?.({ target: { value: next } } as ChangeEvent<HTMLSelectElement>);
-    setOpen(false);
-  };
+    onChange?.({ target: { value: next } } as ChangeEvent<HTMLSelectElement>)
+    setOpen(false)
+  }
   return (
     <div ref={ref} className={`relative ${className}`}>
       <button
@@ -304,10 +291,7 @@ export function Select({
         className={`flex w-full items-center justify-between rounded-[11px] border border-[#dfe2da] bg-white px-3 text-left outline-none transition hover:border-[#b9c9b0] focus:border-[#809970] focus:ring-4 focus:ring-[#edf5e8] ${compact ? "h-9 text-[11px]" : "h-11 text-[13px]"}`}
       >
         <span className="truncate">{current?.label || "Pilih opsi"}</span>
-        <ChevronDown
-          size={compact ? 14 : 16}
-          className="shrink-0 text-[#818a7c]"
-        />
+        <ChevronDown size={compact ? 14 : 16} className="shrink-0 text-[#818a7c]" />
       </button>
       {open && (
         <div
@@ -329,7 +313,7 @@ export function Select({
         </div>
       )}
     </div>
-  );
+  )
 }
 export function Field({
   label,
@@ -337,10 +321,10 @@ export function Field({
   error,
   children,
 }: {
-  label: string;
-  hint?: string;
-  error?: string;
-  children: ReactNode;
+  label: string
+  hint?: string
+  error?: string
+  children: ReactNode
 }) {
   return (
     <label className="block">
@@ -351,7 +335,7 @@ export function Field({
       {children}
       {error && <small className="mt-1 block text-red-600">{error}</small>}
     </label>
-  );
+  )
 }
 export function IconButton({
   children,
@@ -364,7 +348,7 @@ export function IconButton({
     >
       {children}
     </button>
-  );
+  )
 }
 export function EmptyState({
   icon,
@@ -372,10 +356,10 @@ export function EmptyState({
   body,
   action,
 }: {
-  icon: ReactNode;
-  title: string;
-  body: string;
-  action?: ReactNode;
+  icon: ReactNode
+  title: string
+  body: string
+  action?: ReactNode
 }) {
   return (
     <div className="grid min-h-64 place-items-center rounded-[18px] border border-dashed border-[#d7dbd2] bg-white/50 p-8 text-center">
@@ -384,11 +368,9 @@ export function EmptyState({
           {icon}
         </div>
         <h3 className="font-display font-medium">{title}</h3>
-        <p className="mx-auto mt-2 max-w-sm text-[13px] leading-6 text-[#747a71]">
-          {body}
-        </p>
+        <p className="mx-auto mt-2 max-w-sm text-[13px] leading-6 text-[#747a71]">{body}</p>
         {action && <div className="mt-5">{action}</div>}
       </div>
     </div>
-  );
+  )
 }

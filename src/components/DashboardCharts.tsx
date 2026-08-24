@@ -1,31 +1,24 @@
-import { motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion"
+import { useEffect, useMemo, useRef, useState } from "react"
 
-export type MonthlyPoint = { period: string; label: string; count: number };
-export type DailyPoint = { date: string; count: number };
+export type MonthlyPoint = { period: string; label: string; count: number }
+export type DailyPoint = { date: string; count: number }
 export type ProjectSeries = {
-  id: number;
-  name: string;
-  color: string;
-  values: number[];
-};
+  id: number
+  name: string
+  color: string
+  values: number[]
+}
 
-const seriesPalette = [
-  "#6c8f58",
-  "#547da1",
-  "#a76b51",
-  "#80649a",
-  "#b18b37",
-  "#4d8c83",
-];
+const seriesPalette = ["#6c8f58", "#547da1", "#a76b51", "#80649a", "#b18b37", "#4d8c83"]
 function smoothPath(points: { x: number; y: number }[]) {
-  if (!points.length) return "";
+  if (!points.length) return ""
   return points.reduce((path, point, index) => {
-    if (!index) return `M ${point.x} ${point.y}`;
+    if (!index) return `M ${point.x} ${point.y}`
     const previous = points[index - 1],
-      midpoint = (point.x - previous.x) / 2;
-    return `${path} C ${previous.x + midpoint} ${previous.y}, ${point.x - midpoint} ${point.y}, ${point.x} ${point.y}`;
-  }, "");
+      midpoint = (point.x - previous.x) / 2
+    return `${path} C ${previous.x + midpoint} ${previous.y}, ${point.x - midpoint} ${point.y}, ${point.x} ${point.y}`
+  }, "")
 }
 function donutSlicePath(
   startAngle: number,
@@ -36,27 +29,21 @@ function donutSlicePath(
   const point = (radius: number, angle: number) => [
     100 + radius * Math.cos(angle),
     100 + radius * Math.sin(angle),
-  ];
-  const [outerStartX, outerStartY] = point(outerRadius, startAngle);
-  const [outerEndX, outerEndY] = point(outerRadius, endAngle);
-  const [innerEndX, innerEndY] = point(innerRadius, endAngle);
-  const [innerStartX, innerStartY] = point(innerRadius, startAngle);
-  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
-  return `M ${outerStartX} ${outerStartY} A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEndX} ${outerEndY} L ${innerEndX} ${innerEndY} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerStartX} ${innerStartY} Z`;
+  ]
+  const [outerStartX, outerStartY] = point(outerRadius, startAngle)
+  const [outerEndX, outerEndY] = point(outerRadius, endAngle)
+  const [innerEndX, innerEndY] = point(innerRadius, endAngle)
+  const [innerStartX, innerStartY] = point(innerRadius, startAngle)
+  const largeArc = endAngle - startAngle > Math.PI ? 1 : 0
+  return `M ${outerStartX} ${outerStartY} A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEndX} ${outerEndY} L ${innerEndX} ${innerEndY} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerStartX} ${innerStartY} Z`
 }
-export function AreaChart({
-  data,
-  projects,
-}: {
-  data: MonthlyPoint[];
-  projects: ProjectSeries[];
-}) {
-  const [hovered, setHovered] = useState<number | null>(null);
+export function AreaChart({ data, projects }: { data: MonthlyPoint[]; projects: ProjectSeries[] }) {
+  const [hovered, setHovered] = useState<number | null>(null)
   const width = 900,
     height = 250,
     padX = 38,
     padTop = 18,
-    padBottom = 42;
+    padBottom = 42
   const resolved = useMemo(
     () =>
       projects.map((project, index) => ({
@@ -64,14 +51,12 @@ export function AreaChart({
         color: project.color || seriesPalette[index % seriesPalette.length],
       })),
     [projects],
-  );
-  const max = Math.max(...resolved.flatMap((project) => project.values), 1);
-  const chartHeight = height - padTop - padBottom;
-  const xAt = (index: number) =>
-    padX + (index * (width - padX * 2)) / Math.max(data.length - 1, 1);
-  const yAt = (count: number) =>
-    padTop + chartHeight - (count / max) * chartHeight;
-  const hoveredX = hovered === null ? 0 : xAt(hovered);
+  )
+  const max = Math.max(...resolved.flatMap((project) => project.values), 1)
+  const chartHeight = height - padTop - padBottom
+  const xAt = (index: number) => padX + (index * (width - padX * 2)) / Math.max(data.length - 1, 1)
+  const yAt = (count: number) => padTop + chartHeight - (count / max) * chartHeight
+  const hoveredX = hovered === null ? 0 : xAt(hovered)
   return (
     <div className="relative w-full">
       <div className="mb-4 flex flex-wrap gap-x-5 gap-y-2">
@@ -80,10 +65,7 @@ export function AreaChart({
             key={project.id}
             className="flex items-center gap-2 text-xs font-medium text-[#687067]"
           >
-            <span
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ background: project.color }}
-            />
+            <span className="h-2.5 w-2.5 rounded-full" style={{ background: project.color }} />
             {project.name}
           </div>
         ))}
@@ -107,21 +89,13 @@ export function AreaChart({
                   x2="0"
                   y2="1"
                 >
-                  <stop
-                    offset="0%"
-                    stopColor={project.color}
-                    stopOpacity=".16"
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor={project.color}
-                    stopOpacity=".015"
-                  />
+                  <stop offset="0%" stopColor={project.color} stopOpacity=".16" />
+                  <stop offset="100%" stopColor={project.color} stopOpacity=".015" />
                 </linearGradient>
               ))}
             </defs>
             {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
-              const y = padTop + chartHeight * ratio;
+              const y = padTop + chartHeight * ratio
               return (
                 <g key={ratio}>
                   <line
@@ -132,26 +106,20 @@ export function AreaChart({
                     stroke="#e8ebe4"
                     strokeDasharray="4 5"
                   />
-                  <text
-                    x={padX - 10}
-                    y={y + 4}
-                    textAnchor="end"
-                    fontSize="10"
-                    fill="#99a097"
-                  >
+                  <text x={padX - 10} y={y + 4} textAnchor="end" fontSize="10" fill="#99a097">
                     {Math.round(max * (1 - ratio))}
                   </text>
                 </g>
-              );
+              )
             })}
             {resolved.map((project) => {
               const points = project.values.map((count, index) => ({
                 x: xAt(index),
                 y: yAt(count),
-              }));
-              const line = smoothPath(points);
-              const baseline = height - padBottom;
-              const area = `${line} L ${points.at(-1)?.x || padX} ${baseline} L ${padX} ${baseline} Z`;
+              }))
+              const line = smoothPath(points)
+              const baseline = height - padBottom
+              const area = `${line} L ${points.at(-1)?.x || padX} ${baseline} L ${padX} ${baseline} Z`
               return (
                 <motion.path
                   key={project.id}
@@ -161,14 +129,14 @@ export function AreaChart({
                   d={area}
                   fill={`url(#area-${project.id})`}
                 />
-              );
+              )
             })}
             {resolved.map((project) => {
               const points = project.values.map((count, index) => ({
                 x: xAt(index),
                 y: yAt(count),
-              }));
-              const line = smoothPath(points);
+              }))
+              const line = smoothPath(points)
               return (
                 <motion.path
                   key={`line-${project.id}`}
@@ -182,7 +150,7 @@ export function AreaChart({
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
-              );
+              )
             })}
             {hovered !== null && (
               <line
@@ -239,10 +207,7 @@ export function AreaChart({
                     className="flex items-center justify-between gap-5 text-[11px]"
                   >
                     <span className="flex items-center gap-2 text-[#70776e]">
-                      <i
-                        className="h-2 w-2 rounded-full"
-                        style={{ background: project.color }}
-                      />
+                      <i className="h-2 w-2 rounded-full" style={{ background: project.color }} />
                       {project.name}
                     </span>
                     <strong>{project.values[hovered] || 0}</strong>
@@ -252,10 +217,7 @@ export function AreaChart({
               <div className="mt-2 flex justify-between border-t border-[#eceee8] pt-2 text-[11px] font-medium">
                 <span>Total</span>
                 <span>
-                  {resolved.reduce(
-                    (sum, project) => sum + (project.values[hovered] || 0),
-                    0,
-                  )}
+                  {resolved.reduce((sum, project) => sum + (project.values[hovered] || 0), 0)}
                 </span>
               </div>
             </div>
@@ -263,73 +225,63 @@ export function AreaChart({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-const levels = ["#eef0eb", "#d8ebcd", "#aad293", "#79ae60", "#47783a"];
+const levels = ["#eef0eb", "#d8ebcd", "#aad293", "#79ae60", "#47783a"]
 export function ContributionChart({ data }: { data: DailyPoint[] }) {
-  const [hovered, setHovered] = useState<DailyPoint | null>(null);
-  const [scroll, setScroll] = useState({ left: 0, width: 0, content: 0 });
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const startDay = data.length
-    ? new Date(`${data[0].date}T00:00:00`).getDay()
-    : 0;
+  const [hovered, setHovered] = useState<DailyPoint | null>(null)
+  const [scroll, setScroll] = useState({ left: 0, width: 0, content: 0 })
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const startDay = data.length ? new Date(`${data[0].date}T00:00:00`).getDay() : 0
   const cell = 15,
     gap = 4,
     step = cell + gap,
-    weeks = Math.ceil((startDay + data.length) / 7);
-  const max = Math.max(...data.map((item) => item.count), 1);
+    weeks = Math.ceil((startDay + data.length) / 7)
+  const max = Math.max(...data.map((item) => item.count), 1)
   const level = (count: number) =>
-    count === 0 ? 0 : Math.min(4, Math.max(1, Math.ceil((count / max) * 4)));
-  const monthLabels: { label: string; x: number }[] = [];
+    count === 0 ? 0 : Math.min(4, Math.max(1, Math.ceil((count / max) * 4)))
+  const monthLabels: { label: string; x: number }[] = []
   data.forEach((item, index) => {
-    const date = new Date(`${item.date}T00:00:00`);
+    const date = new Date(`${item.date}T00:00:00`)
     if (date.getDate() <= 7) {
-      const x = Math.floor((startDay + index) / 7) * step;
+      const x = Math.floor((startDay + index) / 7) * step
       if (!monthLabels.some((label) => Math.abs(label.x - x) < 25))
         monthLabels.push({
-          label: new Intl.DateTimeFormat("id-ID", { month: "short" }).format(
-            date,
-          ),
+          label: new Intl.DateTimeFormat("id-ID", { month: "short" }).format(date),
           x,
-        });
+        })
     }
-  });
-  const svgWidth = weeks * step + 30;
-  const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  const todayIndex = data.findIndex((item) => item.date === today);
+  })
+  const svgWidth = weeks * step + 30
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
+  const todayIndex = data.findIndex((item) => item.date === today)
   useEffect(() => {
-    const container = scrollRef.current;
-    if (!container) return;
+    const container = scrollRef.current
+    if (!container) return
     const update = () =>
       setScroll({
         left: container.scrollLeft,
         width: container.clientWidth,
         content: container.scrollWidth,
-      });
-    const todayX =
-      todayIndex >= 0 ? 25 + Math.floor((startDay + todayIndex) / 7) * step : 0;
+      })
+    const todayX = todayIndex >= 0 ? 25 + Math.floor((startDay + todayIndex) / 7) * step : 0
     container.scrollLeft = Math.max(
       0,
-      Math.min(
-        todayX - container.clientWidth / 2,
-        container.scrollWidth - container.clientWidth,
-      ),
-    );
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, [data, startDay, step, todayIndex]);
-  if (!data.length) return null;
-  const thumbWidth = scroll.content
-    ? Math.max(44, (scroll.width / scroll.content) * 100)
-    : 100;
+      Math.min(todayX - container.clientWidth / 2, container.scrollWidth - container.clientWidth),
+    )
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(container)
+    return () => observer.disconnect()
+  }, [data, startDay, step, todayIndex])
+  if (!data.length) return null
+  const thumbWidth = scroll.content ? Math.max(44, (scroll.width / scroll.content) * 100) : 100
   const thumbLeft =
     scroll.content > scroll.width
       ? (scroll.left / (scroll.content - scroll.width)) * (100 - thumbWidth)
-      : 0;
+      : 0
   return (
     <div className="group/heatmap relative">
       <div
@@ -386,13 +338,7 @@ export function ContributionChart({ data }: { data: DailyPoint[] }) {
             </text>
           ))}
           {["Min", "Sel", "Kam", "Sab"].map((day, index) => (
-            <text
-              key={day}
-              x="0"
-              y={30 + index * step * 2 + 9}
-              fontSize="8"
-              fill="#9aa098"
-            >
+            <text key={day} x="0" y={30 + index * step * 2 + 9} fontSize="8" fill="#9aa098">
               {day}
             </text>
           ))}
@@ -401,7 +347,7 @@ export function ContributionChart({ data }: { data: DailyPoint[] }) {
               const slot = startDay + index,
                 x = Math.floor(slot / 7) * step,
                 y = (slot % 7) * step,
-                isToday = item.date === today;
+                isToday = item.date === today
               return (
                 <motion.rect
                   key={item.date}
@@ -423,12 +369,10 @@ export function ContributionChart({ data }: { data: DailyPoint[] }) {
                           ? "#fff"
                           : "#e4e7e0"
                   }
-                  strokeWidth={
-                    hovered?.date === item.date ? "1.5" : isToday ? "2" : ".5"
-                  }
+                  strokeWidth={hovered?.date === item.date ? "1.5" : isToday ? "2" : ".5"}
                   onMouseEnter={() => setHovered(item)}
                 />
-              );
+              )
             })}
           </g>
         </svg>
@@ -439,14 +383,14 @@ export function ContributionChart({ data }: { data: DailyPoint[] }) {
           aria-label="Navigasi horizontal konsistensi harian"
           className="heatmap-scroll-track relative mx-auto mt-2 block h-1.5 w-36 overflow-hidden rounded-full bg-[#eef1ec] opacity-0 transition-opacity duration-200 group-hover/heatmap:opacity-100 focus:opacity-100"
           onClick={(event) => {
-            const container = scrollRef.current;
-            if (!container) return;
-            const rect = event.currentTarget.getBoundingClientRect();
-            const ratio = (event.clientX - rect.left) / rect.width;
+            const container = scrollRef.current
+            if (!container) return
+            const rect = event.currentTarget.getBoundingClientRect()
+            const ratio = (event.clientX - rect.left) / rect.width
             container.scrollTo({
               left: ratio * container.scrollWidth - container.clientWidth / 2,
               behavior: "smooth",
-            });
+            })
           }}
         >
           <span
@@ -456,15 +400,11 @@ export function ContributionChart({ data }: { data: DailyPoint[] }) {
         </button>
       )}
     </div>
-  );
+  )
 }
 
-export function ProjectDistributionChart({
-  projects,
-}: {
-  projects: ProjectSeries[];
-}) {
-  const [hovered, setHovered] = useState<number | null>(null);
+export function ProjectDistributionChart({ projects }: { projects: ProjectSeries[] }) {
+  const [hovered, setHovered] = useState<number | null>(null)
   const series = useMemo(
     () =>
       projects
@@ -476,21 +416,19 @@ export function ProjectDistributionChart({
         .filter((project) => project.total > 0)
         .sort((a, b) => b.total - a.total),
     [projects],
-  );
-  const total = series.reduce((sum, project) => sum + project.total, 0);
+  )
+  const total = series.reduce((sum, project) => sum + project.total, 0)
   const radius = 72,
-    circumference = 2 * Math.PI * radius;
-  let runningOffset = 0;
+    circumference = 2 * Math.PI * radius
+  let runningOffset = 0
   const segments = series.map((project) => {
-    const length = total ? (project.total / total) * circumference : 0;
-    const segment = { ...project, length, offset: runningOffset };
-    runningOffset += length;
-    return segment;
-  });
+    const length = total ? (project.total / total) * circumference : 0
+    const segment = { ...project, length, offset: runningOffset }
+    runningOffset += length
+    return segment
+  })
   const active =
-    hovered === null
-      ? null
-      : segments.find((project) => project.id === hovered) || null;
+    hovered === null ? null : segments.find((project) => project.id === hovered) || null
   return (
     <div className="grid min-h-[260px] items-center gap-5 sm:grid-cols-[220px_1fr]">
       <div className="relative mx-auto h-[210px] w-[210px]">
@@ -503,32 +441,23 @@ export function ProjectDistributionChart({
         >
           <circle cx="100" cy="100" r="78" fill="#eef0eb" />
           {segments.map((project) => {
-            const startAngle =
-              (project.offset / circumference) * Math.PI * 2 - Math.PI / 2;
+            const startAngle = (project.offset / circumference) * Math.PI * 2 - Math.PI / 2
             const endAngle =
-              ((project.offset + project.length) / circumference) *
-                Math.PI *
-                2 -
-              Math.PI / 2;
+              ((project.offset + project.length) / circumference) * Math.PI * 2 - Math.PI / 2
             return (
               <motion.path
                 key={project.id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.55 }}
-                d={donutSlicePath(
-                  startAngle,
-                  endAngle,
-                  48,
-                  hovered === project.id ? 81 : 78,
-                )}
+                d={donutSlicePath(startAngle, endAngle, 48, hovered === project.id ? 81 : 78)}
                 fill={project.color}
                 stroke="#fff"
                 strokeWidth="2"
                 onMouseEnter={() => setHovered(project.id)}
                 className="cursor-pointer transition-all"
               />
-            );
+            )
           })}
         </svg>
         <div className="pointer-events-none absolute inset-0 grid place-items-center text-center">
@@ -557,9 +486,7 @@ export function ProjectDistributionChart({
               className="h-2.5 w-2.5 shrink-0 rounded-full"
               style={{ background: project.color }}
             />
-            <span className="min-w-0 flex-1 truncate text-xs font-medium">
-              {project.name}
-            </span>
+            <span className="min-w-0 flex-1 truncate text-xs font-medium">{project.name}</span>
             <span className="text-right">
               <strong className="block text-xs">{project.total}</strong>
               <small className="text-[9px] text-[#8b9188]">
@@ -569,13 +496,11 @@ export function ProjectDistributionChart({
           </button>
         ))}
         {!segments.length && (
-          <p className="text-center text-xs text-[#858b82]">
-            Belum ada data Project.
-          </p>
+          <p className="text-center text-xs text-[#858b82]">Belum ada data Project.</p>
         )}
       </div>
     </div>
-  );
+  )
 }
 
 export function HeatLegend() {
@@ -583,13 +508,9 @@ export function HeatLegend() {
     <div className="flex items-center gap-1.5 text-[10px] text-[#8a9087]">
       <span>Lebih sedikit</span>
       {levels.map((color) => (
-        <span
-          key={color}
-          className="h-3 w-3 rounded-[3px]"
-          style={{ background: color }}
-        />
+        <span key={color} className="h-3 w-3 rounded-[3px]" style={{ background: color }} />
       ))}
       <span>Lebih banyak</span>
     </div>
-  );
+  )
 }

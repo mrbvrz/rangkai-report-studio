@@ -1,67 +1,54 @@
-import { motion } from "framer-motion";
-import {
-  Braces,
-  Check,
-  FileStack,
-  Plus,
-  Save,
-  Sparkles,
-} from "../components/heroicons";
-import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import { api } from "../api";
-import { Button, Card, Field, Input, Textarea } from "../components/ui/index";
-import type { Template } from "../types";
+import { motion } from "framer-motion"
+import { Braces, Check, FileStack, Plus, Save, Sparkles } from "../components/heroicons"
+import { useEffect, useState } from "react"
+import ReactMarkdown from "react-markdown"
+import { api } from "../api"
+import { Button, Card, Field, Input, Textarea } from "../components/ui/index"
+import type { Template } from "../types"
 
 const starter =
-  "# {{title}}\n\n**Periode:** {{period}}\n\n## Ringkasan\n\n{{summary}}\n\n## Aktivitas\n\n{{daily_reports}}\n\n## Lampiran\n\n{{attachments}}";
+  "# {{title}}\n\n**Periode:** {{period}}\n\n## Ringkasan\n\n{{summary}}\n\n## Aktivitas\n\n{{daily_reports}}\n\n## Lampiran\n\n{{attachments}}"
 
 export function Templates() {
   const [templates, setTemplates] = useState<Template[]>([]),
     [selected, setSelected] = useState<Template | null>(null),
-    [saved, setSaved] = useState(false);
+    [saved, setSaved] = useState(false)
   const load = () =>
     api<Template[]>("/templates").then((items) => {
-      setTemplates(items);
+      setTemplates(items)
       setSelected((current) =>
         current ? items.find((x) => x.id === current.id) || items[0] : items[0],
-      );
-    });
+      )
+    })
   useEffect(() => {
-    void load();
-  }, []);
+    void load()
+  }, [])
   async function save() {
-    if (!selected) return;
+    if (!selected) return
     if (selected.id)
       await api(`/templates/${selected.id}`, {
         method: "PUT",
         body: JSON.stringify(selected),
-      });
+      })
     else
       await api("/templates", {
         method: "POST",
         body: JSON.stringify(selected),
-      });
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2000);
-    await load();
+      })
+    setSaved(true)
+    window.setTimeout(() => setSaved(false), 2000)
+    await load()
   }
   const preview = (selected?.content || "")
     .replaceAll("{{title}}", "Laporan Bulanan — Juli 2026")
     .replaceAll("{{period}}", "Juli 2026")
     .replaceAll("{{generated_at}}", "7 Agustus 2026")
-    .replaceAll(
-      "{{summary}}",
-      "Ringkasan capaian dan aktivitas utama pada periode berjalan.",
-    )
+    .replaceAll("{{summary}}", "Ringkasan capaian dan aktivitas utama pada periode berjalan.")
     .replaceAll(
       "{{daily_reports}}",
       "### 4 Juli — Koordinasi tim\n\nPembahasan progres dan penyelarasan target mingguan.",
     )
-    .replaceAll(
-      "{{attachments}}",
-      "_Lampiran dokumentasi akan ditampilkan di sini._",
-    );
+    .replaceAll("{{attachments}}", "_Lampiran dokumentasi akan ditampilkan di sini._")
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -101,9 +88,7 @@ export function Templates() {
             <p className="text-[10px] font-medium uppercase tracking-[.14em] text-[#858d82]">
               Template tersimpan
             </p>
-            <p className="mt-1 text-xs text-[#8a9087]">
-              {templates.length} format tersedia
-            </p>
+            <p className="mt-1 text-xs text-[#8a9087]">{templates.length} format tersedia</p>
           </div>
           <div className="space-y-1 p-2">
             {templates.map((item) => (
@@ -149,18 +134,14 @@ export function Templates() {
                 <Field label="Nama template">
                   <Input
                     value={selected.name}
-                    onChange={(e) =>
-                      setSelected({ ...selected, name: e.target.value })
-                    }
+                    onChange={(e) => setSelected({ ...selected, name: e.target.value })}
                   />
                 </Field>
                 <Field label="Deskripsi">
                   <Textarea
                     rows={3}
                     value={selected.description}
-                    onChange={(e) =>
-                      setSelected({ ...selected, description: e.target.value })
-                    }
+                    onChange={(e) => setSelected({ ...selected, description: e.target.value })}
                     placeholder="Jelaskan kapan template ini digunakan…"
                   />
                 </Field>
@@ -169,9 +150,7 @@ export function Templates() {
                     rows={18}
                     className="font-mono !text-[12px] !leading-6"
                     value={selected.content}
-                    onChange={(e) =>
-                      setSelected({ ...selected, content: e.target.value })
-                    }
+                    onChange={(e) => setSelected({ ...selected, content: e.target.value })}
                   />
                 </Field>
                 <div className="rounded-2xl border border-[#dfe9d9] bg-[#f1f7ed] p-4">
@@ -194,9 +173,7 @@ export function Templates() {
                 <p className="text-[10px] font-medium uppercase tracking-[.14em] text-[#809475]">
                   Preview langsung
                 </p>
-                <p className="mt-1 text-xs text-[#858b82]">
-                  Contoh hasil dengan data pengganti
-                </p>
+                <p className="mt-1 text-xs text-[#858b82]">Contoh hasil dengan data pengganti</p>
               </div>
               <article className="markdown min-h-[640px] bg-white p-7 md:p-10">
                 <ReactMarkdown>{preview}</ReactMarkdown>
@@ -208,7 +185,7 @@ export function Templates() {
         )}
       </div>
     </motion.div>
-  );
+  )
 }
 
 function EmptyStatePlaceholder() {
@@ -218,14 +195,11 @@ function EmptyStatePlaceholder() {
         <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-3xl bg-[#e7f2df] text-[#698457]">
           <FileStack size={26} />
         </div>
-        <h2 className="font-display text-lg font-medium">
-          Pilih template untuk mulai
-        </h2>
+        <h2 className="font-display text-lg font-medium">Pilih template untuk mulai</h2>
         <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#747b72]">
-          Pilih template di panel kiri atau buat template baru untuk melihat
-          editor dan preview.
+          Pilih template di panel kiri atau buat template baru untuk melihat editor dan preview.
         </p>
       </div>
     </div>
-  );
+  )
 }

@@ -1,7 +1,7 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import tailwindcss from "@tailwindcss/vite";
-import { VitePWA } from "vite-plugin-pwa";
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
+import tailwindcss from "@tailwindcss/vite"
+import { VitePWA } from "vite-plugin-pwa"
 
 export default defineConfig({
   plugins: [
@@ -14,8 +14,7 @@ export default defineConfig({
       manifest: {
         name: "Rangkai Report Studio",
         short_name: "Rangkai",
-        description:
-          "Workspace laporan harian dan bulanan yang tersimpan lokal.",
+        description: "Workspace laporan harian dan bulanan yang tersimpan lokal.",
         theme_color: "#fbfbf8",
         background_color: "#f7f7f3",
         display: "standalone",
@@ -68,4 +67,4 @@ export default defineConfig({
       "/uploads": "http://localhost:3001",
     },
   },
-});
+})

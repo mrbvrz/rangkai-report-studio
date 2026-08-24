@@ -1,5 +1,5 @@
-import { Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { Link, Outlet, useRouterState } from "@tanstack/react-router"
+import { motion } from "framer-motion"
 import {
   BarChart3,
   BookOpenText,
@@ -11,10 +11,10 @@ import {
   Settings2,
   Sparkles,
   X,
-} from "../components/heroicons";
-import { useEffect, useState } from "react";
-import { useSecurity } from "../security";
-import { Button } from "./ui/index";
+} from "../components/heroicons"
+import { useEffect, useState } from "react"
+import { useSecurity } from "../security"
+import { Button } from "./ui/index"
 
 const links = [
   { to: "/", label: "Ringkasan", icon: BarChart3 },
@@ -23,22 +23,22 @@ const links = [
   { to: "/monthly", label: "Laporan Bulanan", icon: CalendarRange },
   { to: "/templates", label: "Template", icon: FileStack },
   { to: "/settings", label: "Pengaturan", icon: Settings2 },
-];
+]
 
 export function Layout() {
-  const security = useSecurity();
-  const [open, setOpen] = useState(false);
-  const [databaseSize, setDatabaseSize] = useState(0);
-  const path = useRouterState({ select: (state) => state.location.pathname });
+  const security = useSecurity()
+  const [open, setOpen] = useState(false)
+  const [databaseSize, setDatabaseSize] = useState(0)
+  const path = useRouterState({ select: (state) => state.location.pathname })
   const currentLabel =
     links.find((item) => item.to !== "/" && path.startsWith(item.to))?.label ||
-    (path === "/" ? "Ringkasan" : "Workspace");
+    (path === "/" ? "Ringkasan" : "Workspace")
   useEffect(() => {
     void fetch("/api/health")
       .then((response) => response.json())
       .then((data: { size?: number }) => setDatabaseSize(data.size || 0))
-      .catch(() => undefined);
-  }, []);
+      .catch(() => undefined)
+  }, [])
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
       if (
@@ -47,19 +47,19 @@ export function Layout() {
         security.enabled &&
         !security.locked
       ) {
-        event.preventDefault();
-        security.lock();
+        event.preventDefault()
+        security.lock()
       }
-    };
-    window.addEventListener("keydown", handleShortcut);
-    return () => window.removeEventListener("keydown", handleShortcut);
-  }, [security]);
+    }
+    window.addEventListener("keydown", handleShortcut)
+    return () => window.removeEventListener("keydown", handleShortcut)
+  }, [security])
   const readableSize =
     databaseSize < 1024
       ? `${databaseSize} B`
       : databaseSize < 1024 * 1024
         ? `${(databaseSize / 1024).toFixed(1)} KB`
-        : `${(databaseSize / (1024 * 1024)).toFixed(1)} MB`;
+        : `${(databaseSize / (1024 * 1024)).toFixed(1)} MB`
   const nav = (
     <>
       <div className="flex h-20 items-center gap-3 px-6">
@@ -67,9 +67,7 @@ export function Layout() {
           <Sparkles size={18} />
         </div>
         <div>
-          <div className="font-display text-lg font-medium tracking-[-.03em]">
-            Rangkai
-          </div>
+          <div className="font-display text-lg font-medium tracking-[-.03em]">Rangkai</div>
           <div className="text-[10px] font-medium uppercase tracking-[.16em] text-[#92978f]">
             Report Studio
           </div>
@@ -77,7 +75,7 @@ export function Layout() {
       </div>
       <nav className="space-y-1 px-3">
         {links.map(({ to, label, icon: Icon }) => {
-          const active = to === "/" ? path === "/" : path.startsWith(to);
+          const active = to === "/" ? path === "/" : path.startsWith(to)
           return (
             <Link
               key={to}
@@ -94,7 +92,7 @@ export function Layout() {
               <Icon size={18} strokeWidth={active ? 2.4 : 1.8} />
               {label}
             </Link>
-          );
+          )
         })}
       </nav>
       <div className="mt-auto p-4">
@@ -105,16 +103,13 @@ export function Layout() {
           <p className="text-xs leading-5 text-[#adb4aa]">
             Hubungkan provider AI untuk menyusun ringkasan otomatis.
           </p>
-          <Link
-            to="/settings"
-            className="mt-3 inline-block text-xs font-medium text-[#c9eea1]"
-          >
+          <Link to="/settings" className="mt-3 inline-block text-xs font-medium text-[#c9eea1]">
             Atur sekarang →
           </Link>
         </div>
       </div>
     </>
-  );
+  )
   return (
     <div className="min-h-screen bg-[#fbfbf8] lg:grid lg:grid-cols-[240px_1fr]">
       <motion.aside
@@ -137,10 +132,7 @@ export function Layout() {
             animate={{ x: 0 }}
             className="fixed inset-y-0 left-0 z-50 flex w-60 flex-col bg-[#fbfbf8] lg:hidden"
           >
-            <button
-              className="absolute right-3 top-3 p-2"
-              onClick={() => setOpen(false)}
-            >
+            <button className="absolute right-3 top-3 p-2" onClick={() => setOpen(false)}>
               <X size={20} />
             </button>
             {nav}
@@ -179,11 +171,7 @@ export function Layout() {
               </div>
             </div>
             {security.enabled && !security.locked && (
-              <Button
-                $variant="warning"
-                onClick={security.lock}
-                title="Kunci workspace"
-              >
+              <Button $variant="warning" onClick={security.lock} title="Kunci workspace">
                 <LockKeyhole size={14} />
                 <span className="hidden sm:inline">Kunci</span>
               </Button>
@@ -202,5 +190,5 @@ export function Layout() {
         </div>
       </main>
     </div>
-  );
+  )
 }

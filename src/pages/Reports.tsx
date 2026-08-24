@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "framer-motion";
+import { Link } from "@tanstack/react-router"
+import { AnimatePresence, motion } from "framer-motion"
 import {
   ChevronDown,
   ChevronLeft,
@@ -12,59 +12,41 @@ import {
   Plus,
   Search,
   Trash2,
-} from "../components/heroicons";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { api, displayDate } from "../api";
-import {
-  Button,
-  Card,
-  EmptyState,
-  Input,
-  Select,
-} from "../components/ui/index";
-import type { Project, Report } from "../types";
+} from "../components/heroicons"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { api, displayDate } from "../api"
+import { Button, Card, EmptyState, Input, Select } from "../components/ui/index"
+import type { Project, Report } from "../types"
 
-type SortOption =
-  "date-desc" | "date-asc" | "title-asc" | "title-desc" | "updated-desc";
-type ViewMode = "grid" | "list";
+type SortOption = "date-desc" | "date-asc" | "title-asc" | "title-desc" | "updated-desc"
+type ViewMode = "grid" | "list"
 
 function PaginationNumbers({
   currentPage,
   pageCount,
   onChange,
 }: {
-  currentPage: number;
-  pageCount: number;
-  onChange: (page: number) => void;
+  currentPage: number
+  pageCount: number
+  onChange: (page: number) => void
 }) {
   const items: (number | "ellipsis")[] =
     pageCount <= 7
       ? Array.from({ length: pageCount }, (_, index) => index + 1)
       : (() => {
-          const pages = new Set([
-            1,
-            pageCount,
-            currentPage,
-            currentPage - 1,
-            currentPage + 1,
-          ]);
+          const pages = new Set([1, pageCount, currentPage, currentPage - 1, currentPage + 1])
           const ordered = [...pages]
             .filter((page) => page > 0 && page <= pageCount)
-            .sort((a, b) => a - b);
+            .sort((a, b) => a - b)
           return ordered.flatMap((page, index) =>
-            index && page - ordered[index - 1] > 1
-              ? ["ellipsis", page]
-              : [page],
-          );
-        })();
+            index && page - ordered[index - 1] > 1 ? ["ellipsis", page] : [page],
+          )
+        })()
   return (
     <div className="flex items-center gap-1">
       {items.map((item, index) =>
         item === "ellipsis" ? (
-          <span
-            key={`ellipsis-${index}`}
-            className="px-1 text-[8px] text-[#8a9188]"
-          >
+          <span key={`ellipsis-${index}`} className="px-1 text-[8px] text-[#8a9188]">
             …
           </span>
         ) : (
@@ -80,7 +62,7 @@ function PaginationNumbers({
         ),
       )}
     </div>
-  );
+  )
 }
 
 export function Reports() {
@@ -95,28 +77,28 @@ export function Reports() {
     [deletingReport, setDeletingReport] = useState<Report | null>(null),
     [pageSize, setPageSize] = useState(15),
     [page, setPage] = useState(1),
-    [busy, setBusy] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
-  const load = () => api<Report[]>("/reports?summary=1").then(setReports);
+    [busy, setBusy] = useState(false)
+  const searchRef = useRef<HTMLInputElement>(null)
+  const load = () => api<Report[]>("/reports?summary=1").then(setReports)
   useEffect(() => {
-    void load();
-    void api<Project[]>("/projects").then(setProjects);
-  }, []);
+    void load()
+    void api<Project[]>("/projects").then(setProjects)
+  }, [])
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        searchRef.current?.focus();
+        event.preventDefault()
+        searchRef.current?.focus()
       }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [])
   useEffect(() => {
-    setPage(1);
-  }, [query, projectId, status, sort, pageSize]);
+    setPage(1)
+  }, [query, projectId, status, sort, pageSize])
   const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase("id-ID");
+    const normalizedQuery = query.trim().toLocaleLowerCase("id-ID")
     return reports
       .filter(
         (report) =>
@@ -127,48 +109,34 @@ export function Reports() {
             .includes(normalizedQuery),
       )
       .sort((a, b) => {
-        if (sort === "title-asc") return a.title.localeCompare(b.title, "id");
-        if (sort === "title-desc") return b.title.localeCompare(a.title, "id");
-        if (sort === "date-asc")
-          return a.report_date.localeCompare(b.report_date) || a.id - b.id;
-        if (sort === "updated-desc")
-          return b.updated_at.localeCompare(a.updated_at);
-        return b.report_date.localeCompare(a.report_date) || b.id - a.id;
-      });
-  }, [reports, query, projectId, status, sort]);
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const currentPage = Math.min(page, pageCount);
-  const visibleReports = filtered.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  );
-  const firstResult = filtered.length ? (currentPage - 1) * pageSize + 1 : 0;
-  const lastResult = Math.min(currentPage * pageSize, filtered.length);
+        if (sort === "title-asc") return a.title.localeCompare(b.title, "id")
+        if (sort === "title-desc") return b.title.localeCompare(a.title, "id")
+        if (sort === "date-asc") return a.report_date.localeCompare(b.report_date) || a.id - b.id
+        if (sort === "updated-desc") return b.updated_at.localeCompare(a.updated_at)
+        return b.report_date.localeCompare(a.report_date) || b.id - a.id
+      })
+  }, [reports, query, projectId, status, sort])
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const currentPage = Math.min(page, pageCount)
+  const visibleReports = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const firstResult = filtered.length ? (currentPage - 1) * pageSize + 1 : 0
+  const lastResult = Math.min(currentPage * pageSize, filtered.length)
   const paginationItems = useMemo<(number | "ellipsis")[]>(() => {
-    if (pageCount <= 7)
-      return Array.from({ length: pageCount }, (_, index) => index + 1);
-    const pages = new Set([
-      1,
-      pageCount,
-      currentPage,
-      currentPage - 1,
-      currentPage + 1,
-    ]);
-    const ordered = [...pages]
-      .filter((item) => item > 0 && item <= pageCount)
-      .sort((a, b) => a - b);
+    if (pageCount <= 7) return Array.from({ length: pageCount }, (_, index) => index + 1)
+    const pages = new Set([1, pageCount, currentPage, currentPage - 1, currentPage + 1])
+    const ordered = [...pages].filter((item) => item > 0 && item <= pageCount).sort((a, b) => a - b)
     return ordered.flatMap((item, index) =>
       index && item - ordered[index - 1] > 1 ? ["ellipsis", item] : [item],
-    );
-  }, [currentPage, pageCount]);
+    )
+  }, [currentPage, pageCount])
   async function remove(id: number) {
-    setBusy(true);
+    setBusy(true)
     try {
-      await api(`/reports/${id}`, { method: "DELETE" });
-      setDeletingReport(null);
-      await load();
+      await api(`/reports/${id}`, { method: "DELETE" })
+      setDeletingReport(null)
+      await load()
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
   return (
@@ -181,15 +149,11 @@ export function Reports() {
             </div>
             <h2 className="font-display text-lg font-medium">Hapus laporan?</h2>
             <p className="mt-2 text-sm leading-6 text-[#747b71]">
-              “{deletingReport.title}” dan seluruh lampirannya akan dihapus
-              permanen. Tindakan ini tidak dapat dibatalkan.
+              “{deletingReport.title}” dan seluruh lampirannya akan dihapus permanen. Tindakan ini
+              tidak dapat dibatalkan.
             </p>
             <div className="mt-6 flex justify-end gap-2">
-              <Button
-                $variant="secondary"
-                disabled={busy}
-                onClick={() => setDeletingReport(null)}
-              >
+              <Button $variant="secondary" disabled={busy} onClick={() => setDeletingReport(null)}>
                 Batal
               </Button>
               <Button
@@ -208,12 +172,8 @@ export function Reports() {
           <p className="mb-2 text-xs font-medium uppercase tracking-[.15em] text-[#789168]">
             Koleksi
           </p>
-          <h1 className="font-display text-3xl font-medium tracking-[-.04em]">
-            Laporan harian
-          </h1>
-          <p className="mt-2 text-sm text-[#777d74]">
-            Satu hari boleh memiliki beberapa laporan.
-          </p>
+          <h1 className="font-display text-3xl font-medium tracking-[-.04em]">Laporan harian</h1>
+          <p className="mt-2 text-sm text-[#777d74]">Satu hari boleh memiliki beberapa laporan.</p>
         </div>
         <Link to="/reports/new">
           <Button>
@@ -224,10 +184,7 @@ export function Reports() {
       <div className="relative z-20 mb-5 p-0">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <div className="relative min-w-0 flex-1">
-            <Search
-              size={16}
-              className="absolute left-3.5 top-3.5 text-[#92988f]"
-            />
+            <Search size={16} className="absolute left-3.5 top-3.5 text-[#92988f]" />
             <Input
               ref={searchRef}
               value={query}
@@ -273,9 +230,9 @@ export function Reports() {
                     <button
                       type="button"
                       onClick={() => {
-                        setProjectId("");
-                        setStatus("");
-                        setSort("date-desc");
+                        setProjectId("")
+                        setStatus("")
+                        setSort("date-desc")
                       }}
                       className="text-xs font-medium text-[#668457]"
                     >
@@ -358,11 +315,7 @@ export function Reports() {
       {filtered.length ? (
         <>
           <div
-            className={
-              view === "grid"
-                ? "grid gap-5 md:grid-cols-2 xl:grid-cols-3"
-                : "grid gap-2"
-            }
+            className={view === "grid" ? "grid gap-5 md:grid-cols-2 xl:grid-cols-3" : "grid gap-2"}
           >
             <AnimatePresence initial={false} mode="popLayout">
               {visibleReports.map((report) =>
@@ -396,10 +349,7 @@ export function Reports() {
                         <Trash2 size={15} />
                       </button>
                     </div>
-                    <Link
-                      to="/reports/$reportId"
-                      params={{ reportId: String(report.id) }}
-                    >
+                    <Link to="/reports/$reportId" params={{ reportId: String(report.id) }}>
                       <div className="mb-2 flex items-center gap-2">
                         <span
                           className="h-2 w-2 rounded-full"
@@ -410,15 +360,11 @@ export function Reports() {
                         </span>
                         {report.sync_status !== "manual" && (
                           <span className="ml-auto rounded-full bg-[#e9f1e4] px-2 py-0.5 text-[9px] font-medium text-[#647b58]">
-                            {report.sync_status === "synced"
-                              ? "SYNC"
-                              : "DIUBAH"}
+                            {report.sync_status === "synced" ? "SYNC" : "DIUBAH"}
                           </span>
                         )}
                       </div>
-                      <h2 className="font-display truncate font-medium">
-                        {report.title}
-                      </h2>
+                      <h2 className="font-display truncate font-medium">{report.title}</h2>
                       <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-[#747a71]">
                         {report.content.replace(/[#*_`]/g, "")}
                       </p>
@@ -560,5 +506,5 @@ export function Reports() {
         />
       )}
     </motion.div>
-  );
+  )
 }

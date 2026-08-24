@@ -1,6 +1,6 @@
-import { useForm } from "@tanstack/react-form";
-import { Link, useNavigate, useParams } from "@tanstack/react-router";
-import { AnimatePresence, motion } from "framer-motion";
+import { useForm } from "@tanstack/react-form"
+import { Link, useNavigate, useParams } from "@tanstack/react-router"
+import { AnimatePresence, motion } from "framer-motion"
 import {
   ArrowLeft,
   Check,
@@ -12,23 +12,15 @@ import {
   Send,
   Sparkles,
   X,
-} from "../components/heroicons";
-import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import { api } from "../api";
-import {
-  Button,
-  Card,
-  DatePicker,
-  Field,
-  Input,
-  Select,
-  Textarea,
-} from "../components/ui/index";
-import type { Project, Report } from "../types";
-import { useSecurity } from "../security";
+} from "../components/heroicons"
+import { useEffect, useRef, useState } from "react"
+import ReactMarkdown from "react-markdown"
+import { api } from "../api"
+import { Button, Card, DatePicker, Field, Input, Select, Textarea } from "../components/ui/index"
+import type { Project, Report } from "../types"
+import { useSecurity } from "../security"
 
-type AiAction = "improve" | "expand" | "summarize" | "structure" | "translate" | "continue";
+type AiAction = "improve" | "expand" | "summarize" | "structure" | "translate" | "continue"
 
 const aiActions: { id: AiAction; label: string; desc: string; icon: string }[] = [
   { id: "improve", label: "Perbaiki", desc: "Tingkatkan kejelasan & profesionalitas", icon: "✨" },
@@ -37,32 +29,32 @@ const aiActions: { id: AiAction; label: string; desc: string; icon: string }[] =
   { id: "structure", label: "Strukturkan", desc: "Format jadi laporan standar", icon: "🏗️" },
   { id: "translate", label: "Terjemahkan", desc: "Ke Bahasa Indonesia profesional", icon: "🌐" },
   { id: "continue", label: "Lanjutkan", desc: "Tulis kelanjutan alur penulisan", icon: "➡️" },
-];
+]
 
 type Values = {
-  projectId: string;
-  title: string;
-  reportDate: string;
-  content: string;
-  status: "draft" | "published";
-  tags: string;
-};
+  projectId: string
+  title: string
+  reportDate: string
+  content: string
+  status: "draft" | "published"
+  tags: string
+}
 export function ReportEditor() {
-  const params = useParams({ strict: false }) as { reportId?: string };
+  const params = useParams({ strict: false }) as { reportId?: string }
   const reportId = params.reportId,
     navigate = useNavigate(),
     fileRef = useRef<HTMLInputElement>(null),
-    imageRef = useRef<HTMLInputElement>(null);
+    imageRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState(true),
     [attachments, setAttachments] = useState<Report["attachments"]>([]),
-    [notice, setNotice] = useState("");
-  const [projects, setProjects] = useState<Project[]>([]);
-  const security = useSecurity();
+    [notice, setNotice] = useState("")
+  const [projects, setProjects] = useState<Project[]>([])
+  const security = useSecurity()
   const [aiBusy, setAiBusy] = useState(false),
     [aiAction, setAiAction] = useState<AiAction>("improve"),
     [aiContext, setAiContext] = useState(""),
     [aiResult, setAiResult] = useState(""),
-    [aiError, setAiError] = useState("");
+    [aiError, setAiError] = useState("")
   const form = useForm({
     defaultValues: {
       projectId: "",
@@ -80,90 +72,92 @@ export function ReportEditor() {
           .split(",")
           .map((tag) => tag.trim())
           .filter(Boolean),
-      });
-      if (reportId) await api(`/reports/${reportId}`, { method: "PUT", body });
+      })
+      if (reportId) await api(`/reports/${reportId}`, { method: "PUT", body })
       else {
         const result = await api<{ id: number }>("/reports", {
           method: "POST",
           body,
-        });
+        })
         await navigate({
           to: "/reports/$reportId",
           params: { reportId: String(result.id) },
-        });
+        })
       }
-      setNotice("Perubahan berhasil disimpan.");
-      window.setTimeout(() => setNotice(""), 2500);
+      setNotice("Perubahan berhasil disimpan.")
+      window.setTimeout(() => setNotice(""), 2500)
     },
-  });
+  })
   useEffect(() => {
     api<Project[]>("/projects").then((items) => {
-      setProjects(items);
-      if (!reportId && items[0])
-        form.setFieldValue("projectId", String(items[0].id));
-    });
-  }, [reportId]);
+      setProjects(items)
+      if (!reportId && items[0]) form.setFieldValue("projectId", String(items[0].id))
+    })
+  }, [reportId])
   useEffect(() => {
-    if (!reportId) return;
+    if (!reportId) return
     api<Report>(`/reports/${reportId}`).then((r) => {
-      form.setFieldValue("title", r.title);
-      form.setFieldValue("projectId", String(r.project_id));
-      form.setFieldValue("reportDate", r.report_date);
-      form.setFieldValue("content", r.content);
-      form.setFieldValue("status", r.status);
-      form.setFieldValue("tags", r.tags.join(", "));
-      setAttachments(r.attachments);
-    });
-  }, [reportId]);
+      form.setFieldValue("title", r.title)
+      form.setFieldValue("projectId", String(r.project_id))
+      form.setFieldValue("reportDate", r.report_date)
+      form.setFieldValue("content", r.content)
+      form.setFieldValue("status", r.status)
+      form.setFieldValue("tags", r.tags.join(", "))
+      setAttachments(r.attachments)
+    })
+  }, [reportId])
 
   async function runAiWriting() {
-    const content = form.getFieldValue("content");
-    if (!content.trim()) return setAiError("Isi laporan kosong.");
-    const saved = await security.readAiConfig<{ provider?: string; apiKey?: string; model?: string; baseUrl?: string }>();
-    if (!saved.apiKey || !saved.model) return setAiError("Konfigurasi AI belum disimpan di Pengaturan.");
-    setAiBusy(true);
-    setAiError("");
+    const content = form.getFieldValue("content")
+    if (!content.trim()) return setAiError("Isi laporan kosong.")
+    const saved = await security.readAiConfig<{
+      provider?: string
+      apiKey?: string
+      model?: string
+      baseUrl?: string
+    }>()
+    if (!saved.apiKey || !saved.model)
+      return setAiError("Konfigurasi AI belum disimpan di Pengaturan.")
+    setAiBusy(true)
+    setAiError("")
     try {
       const res = await api<{ result: string }>("/api/ai/write", {
         method: "POST",
         body: JSON.stringify({ content, action: aiAction, context: aiContext, ai: saved }),
-      });
-      setAiResult(res.result);
+      })
+      setAiResult(res.result)
     } catch (e) {
-      setAiError(e instanceof Error ? e.message : "Gagal memproses dengan AI.");
+      setAiError(e instanceof Error ? e.message : "Gagal memproses dengan AI.")
     } finally {
-      setAiBusy(false);
+      setAiBusy(false)
     }
   }
 
   function applyAiResult() {
-    if (!aiResult) return;
-    form.setFieldValue("content", aiResult);
-    setAiResult("");
-    setNotice("Hasil AI diterapkan ke editor.");
-    window.setTimeout(() => setNotice(""), 2500);
+    if (!aiResult) return
+    form.setFieldValue("content", aiResult)
+    setAiResult("")
+    setNotice("Hasil AI diterapkan ke editor.")
+    window.setTimeout(() => setNotice(""), 2500)
   }
   function importMarkdown(file?: File) {
-    if (!file) return;
+    if (!file) return
     file.text().then((content) => {
-      form.setFieldValue("content", content);
+      form.setFieldValue("content", content)
       if (!form.getFieldValue("title"))
-        form.setFieldValue(
-          "title",
-          file.name.replace(/\.md$/i, "").replace(/[-_]/g, " "),
-        );
-    });
+        form.setFieldValue("title", file.name.replace(/\.md$/i, "").replace(/[-_]/g, " "))
+    })
   }
   async function uploadImages(files?: FileList | null) {
-    if (!files?.length || !reportId) return;
-    const data = new FormData();
-    Array.from(files).forEach((file) => data.append("images", file));
+    if (!files?.length || !reportId) return
+    const data = new FormData()
+    Array.from(files).forEach((file) => data.append("images", file))
     const response = await fetch(`/api/reports/${reportId}/attachments`, {
       method: "POST",
       body: data,
-    });
-    if (!response.ok) throw new Error("Gagal mengunggah gambar.");
-    setAttachments(await response.json());
+    })
+    if (!response.ok) throw new Error("Gagal mengunggah gambar.")
+    setAttachments(await response.json())
   }
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
@@ -183,11 +177,7 @@ export function ReportEditor() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            $variant="secondary"
-            type="button"
-            onClick={() => fileRef.current?.click()}
-          >
+          <Button $variant="secondary" type="button" onClick={() => fileRef.current?.click()}>
             <FileUp size={16} /> Impor .md
           </Button>
           <input
@@ -197,19 +187,10 @@ export function ReportEditor() {
             hidden
             onChange={(e) => importMarkdown(e.target.files?.[0])}
           />
-          <form.Subscribe
-            selector={(state) => [state.canSubmit, state.isSubmitting]}
-          >
+          <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
             {([canSubmit, isSubmitting]) => (
-              <Button
-                disabled={!canSubmit || isSubmitting}
-                onClick={() => form.handleSubmit()}
-              >
-                {isSubmitting ? (
-                  <Loader2 className="animate-spin" size={16} />
-                ) : (
-                  <Save size={16} />
-                )}{" "}
+              <Button disabled={!canSubmit || isSubmitting} onClick={() => form.handleSubmit()}>
+                {isSubmitting ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}{" "}
                 Simpan
               </Button>
             )}
@@ -232,8 +213,8 @@ export function ReportEditor() {
         <Card className="p-5 md:p-6">
           <form
             onSubmit={(e) => {
-              e.preventDefault();
-              form.handleSubmit();
+              e.preventDefault()
+              form.handleSubmit()
             }}
             className="space-y-5"
           >
@@ -241,15 +222,11 @@ export function ReportEditor() {
               <form.Field
                 name="title"
                 validators={{
-                  onChange: ({ value }) =>
-                    !value.trim() ? "Judul wajib diisi." : undefined,
+                  onChange: ({ value }) => (!value.trim() ? "Judul wajib diisi." : undefined),
                 }}
               >
                 {(field) => (
-                  <Field
-                    label="Judul laporan"
-                    error={field.state.meta.errors[0]}
-                  >
+                  <Field label="Judul laporan" error={field.state.meta.errors[0]}>
                     <Input
                       value={field.state.value}
                       onBlur={field.handleBlur}
@@ -291,9 +268,7 @@ export function ReportEditor() {
               name="content"
               validators={{
                 onChange: ({ value }) =>
-                  value.trim().length < 5
-                    ? "Isi laporan terlalu singkat."
-                    : undefined,
+                  value.trim().length < 5 ? "Isi laporan terlalu singkat." : undefined,
               }}
             >
               {(field) => (
@@ -307,9 +282,7 @@ export function ReportEditor() {
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
-                    placeholder={
-                      "## Aktivitas\n\nTuliskan aktivitas, hasil, dan tindak lanjut…"
-                    }
+                    placeholder={"## Aktivitas\n\nTuliskan aktivitas, hasil, dan tindak lanjut…"}
                     className="font-mono !text-[13px] !leading-6"
                   />
                 </Field>
@@ -345,15 +318,17 @@ export function ReportEditor() {
                     placeholder="Konteks tambahan (opsional): tujuan audiens, poin khusus, dll."
                     className="!text-[12px]"
                   />
-                  {aiError && (
-                    <p className="text-xs text-red-600">{aiError}</p>
-                  )}
+                  {aiError && <p className="text-xs text-red-600">{aiError}</p>}
                   <Button
                     onClick={runAiWriting}
                     disabled={aiBusy || !form.getFieldValue("content").trim()}
                     className="w-full md:w-auto"
                   >
-                    {aiBusy ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
+                    {aiBusy ? (
+                      <Loader2 className="animate-spin" size={14} />
+                    ) : (
+                      <Sparkles size={14} />
+                    )}
                     {aiBusy ? "Memproses…" : "Jalankan AI"}
                   </Button>
                 </div>
@@ -364,10 +339,18 @@ export function ReportEditor() {
                       {aiResult}
                     </div>
                     <div className="flex gap-2">
-                      <Button $variant="secondary" onClick={applyAiResult} className="w-full md:w-auto">
+                      <Button
+                        $variant="secondary"
+                        onClick={applyAiResult}
+                        className="w-full md:w-auto"
+                      >
                         <Check size={14} /> Terapkan ke editor
                       </Button>
-                      <Button $variant="secondary" onClick={() => setAiResult("")} className="w-full md:w-auto">
+                      <Button
+                        $variant="secondary"
+                        onClick={() => setAiResult("")}
+                        className="w-full md:w-auto"
+                      >
                         <X size={14} /> Buang
                       </Button>
                     </div>
@@ -392,9 +375,7 @@ export function ReportEditor() {
                   <Field label="Status">
                     <Select
                       value={field.state.value}
-                      onChange={(e) =>
-                        field.handleChange(e.target.value as Values["status"])
-                      }
+                      onChange={(e) => field.handleChange(e.target.value as Values["status"])}
                     >
                       <option value="draft">Draf</option>
                       <option value="published">Final</option>
@@ -496,5 +477,5 @@ export function ReportEditor() {
         )}
       </Card>
     </motion.div>
-  );
+  )
 }

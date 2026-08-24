@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion"
 import {
   ArrowLeft,
   CheckCircle2,
@@ -16,62 +16,48 @@ import {
   Trash2,
   X,
   XCircle,
-} from "../components/heroicons";
-import { useEffect, useMemo, useState } from "react";
-import { api } from "../api";
-import {
-  Button,
-  Card,
-  EmptyState,
-  Field,
-  Input,
-  Textarea,
-} from "../components/ui/index";
-import type { Project, ProjectSource, SourceFile } from "../types";
+} from "../components/heroicons"
+import { useEffect, useMemo, useState } from "react"
+import { api } from "../api"
+import { Button, Card, EmptyState, Field, Input, Textarea } from "../components/ui/index"
+import type { Project, ProjectSource, SourceFile } from "../types"
 
-const colors = [
-  "#6c8f58",
-  "#547da1",
-  "#a76b51",
-  "#80649a",
-  "#b18b37",
-  "#4d8c83",
-];
+const colors = ["#6c8f58", "#547da1", "#a76b51", "#80649a", "#b18b37", "#4d8c83"]
 type DirectoryView = {
-  current: string;
-  parent: string | null;
-  directories: { name: string; path: string }[];
-  markdownCount: number;
-};
+  current: string
+  parent: string | null
+  directories: { name: string; path: string }[]
+  markdownCount: number
+}
 
 function FolderPicker({
   onClose,
   onSelect,
 }: {
-  onClose: () => void;
-  onSelect: (path: string) => void;
+  onClose: () => void
+  onSelect: (path: string) => void
 }) {
   const [view, setView] = useState<DirectoryView | null>(null),
     [loading, setLoading] = useState(true),
-    [error, setError] = useState("");
+    [error, setError] = useState("")
   const browse = async (path?: string) => {
-    setLoading(true);
-    setError("");
+    setLoading(true)
+    setError("")
     try {
       setView(
         await api<DirectoryView>(
           `/filesystem/directories${path ? `?path=${encodeURIComponent(path)}` : ""}`,
         ),
-      );
+      )
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Folder tidak dapat dibuka.");
+      setError(e instanceof Error ? e.message : "Folder tidak dapat dibuka.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
   useEffect(() => {
-    void browse();
-  }, []);
+    void browse()
+  }, [])
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-[#20251f]/45 p-4 backdrop-blur-sm">
       <motion.div
@@ -132,35 +118,28 @@ function FolderPicker({
                 </button>
               ))}
               {!view?.directories.length && (
-                <p className="p-8 text-center text-xs text-[#8a9087]">
-                  Tidak ada subfolder.
-                </p>
+                <p className="p-8 text-center text-xs text-[#8a9087]">Tidak ada subfolder.</p>
               )}
             </div>
           )}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#e3e6de] bg-white px-5 py-4">
           <p className="text-xs text-[#7f857c]">
-            <strong className="text-[#465043]">
-              {view?.markdownCount || 0}
-            </strong>{" "}
-            file Markdown langsung di folder ini
+            <strong className="text-[#465043]">{view?.markdownCount || 0}</strong> file Markdown
+            langsung di folder ini
           </p>
           <div className="flex gap-2">
             <Button $variant="ghost" onClick={onClose}>
               Batal
             </Button>
-            <Button
-              disabled={!view}
-              onClick={() => view && onSelect(view.current)}
-            >
+            <Button disabled={!view} onClick={() => view && onSelect(view.current)}>
               <FolderOpen size={16} /> Pilih folder ini
             </Button>
           </div>
         </div>
       </motion.div>
     </div>
-  );
+  )
 }
 
 function SourceFiles({
@@ -174,17 +153,17 @@ function SourceFiles({
   onRemove,
   busy,
 }: {
-  source: ProjectSource;
-  selected: number[];
-  onToggle: (id: number) => void;
-  onAll: (files: SourceFile[]) => void;
-  onAction: (action: "import" | "ignore") => void;
-  onSync: () => void;
-  onWatch: () => void;
-  onRemove: () => void;
-  busy: boolean;
+  source: ProjectSource
+  selected: number[]
+  onToggle: (id: number) => void
+  onAll: (files: SourceFile[]) => void
+  onAction: (action: "import" | "ignore") => void
+  onSync: () => void
+  onWatch: () => void
+  onRemove: () => void
+  busy: boolean
 }) {
-  const pending = source.files.filter((file) => file.status === "pending");
+  const pending = source.files.filter((file) => file.status === "pending")
   return (
     <div className="overflow-hidden rounded-2xl border border-[#e2e5dd] bg-white">
       <div className="flex flex-col gap-3 border-b border-[#e8eae4] p-4 md:flex-row md:items-center">
@@ -192,9 +171,7 @@ function SourceFiles({
           <FolderSync size={18} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-mono text-xs font-medium">
-            {source.folder_path}
-          </p>
+          <p className="truncate font-mono text-xs font-medium">{source.folder_path}</p>
           <p className="mt-1 text-[10px] text-[#858b82]">
             {source.last_message || "Belum dipindai"}{" "}
             {source.last_synced_at && `· ${source.last_synced_at}`}
@@ -229,10 +206,7 @@ function SourceFiles({
         <label className="flex items-center gap-2 text-xs font-medium">
           <input
             type="checkbox"
-            checked={
-              pending.length > 0 &&
-              pending.every((file) => selected.includes(file.id))
-            }
+            checked={pending.length > 0 && pending.every((file) => selected.includes(file.id))}
             onChange={() => onAll(pending)}
             className="accent-[#698657]"
           />{" "}
@@ -245,9 +219,7 @@ function SourceFiles({
             </Button>
             <Button onClick={() => onAction("import")}>
               {selected.some(
-                (id) =>
-                  source.files.find((file) => file.id === id)?.change_type ===
-                  "modified",
+                (id) => source.files.find((file) => file.id === id)?.change_type === "modified",
               )
                 ? "Re-sync"
                 : "Impor"}{" "}
@@ -272,16 +244,10 @@ function SourceFiles({
             <div
               className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${file.change_type === "modified" && file.status === "pending" ? "bg-[#fff0d8] text-[#a06d1f]" : "bg-[#eff2ec] text-[#708067]"}`}
             >
-              {file.change_type === "modified" ? (
-                <FileClock size={15} />
-              ) : (
-                <FileText size={15} />
-              )}
+              {file.change_type === "modified" ? <FileClock size={15} /> : <FileText size={15} />}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium">
-                {file.relative_path}
-              </p>
+              <p className="truncate text-xs font-medium">{file.relative_path}</p>
               <p className="mt-1 text-[10px] text-[#8a9087]">
                 {file.change_type === "new"
                   ? "File baru"
@@ -312,7 +278,7 @@ function SourceFiles({
         )}
       </div>
     </div>
-  );
+  )
 }
 
 export function Projects() {
@@ -321,180 +287,153 @@ export function Projects() {
     [creating, setCreating] = useState(false),
     [editing, setEditing] = useState(false),
     [deleting, setDeleting] = useState(false),
-    [picker, setPicker] = useState(false);
+    [picker, setPicker] = useState(false)
   const [name, setName] = useState(""),
     [description, setDescription] = useState(""),
     [color, setColor] = useState(colors[0]),
     [busy, setBusy] = useState(false),
-    [message, setMessage] = useState("");
-  const [selected, setSelected] = useState<Record<number, number[]>>({});
+    [message, setMessage] = useState("")
+  const [selected, setSelected] = useState<Record<number, number[]>>({})
   const loadProjects = async (preferredId?: number, selectFirst = false) => {
-    const list = await api<Project[]>("/projects");
-    setProjects(list);
-    const id = preferredId || (!selectFirst && active?.id) || list[0]?.id;
-    if (id) setActive(await api<Project>(`/projects/${id}`));
-    else setActive(null);
-  };
+    const list = await api<Project[]>("/projects")
+    setProjects(list)
+    const id = preferredId || (!selectFirst && active?.id) || list[0]?.id
+    if (id) setActive(await api<Project>(`/projects/${id}`))
+    else setActive(null)
+  }
   useEffect(() => {
-    void loadProjects();
-  }, []);
+    void loadProjects()
+  }, [])
   async function createProject() {
-    setBusy(true);
+    setBusy(true)
     try {
       const result = await api<{ id: number }>("/projects", {
         method: "POST",
         body: JSON.stringify({ name, description, color }),
-      });
-      setCreating(false);
-      setName("");
-      setDescription("");
-      await loadProjects(result.id);
+      })
+      setCreating(false)
+      setName("")
+      setDescription("")
+      await loadProjects(result.id)
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
   function startEdit() {
-    if (!active) return;
-    setName(active.name);
-    setDescription(active.description);
-    setColor(active.color);
-    setEditing(true);
+    if (!active) return
+    setName(active.name)
+    setDescription(active.description)
+    setColor(active.color)
+    setEditing(true)
   }
   async function updateProject() {
-    if (!active) return;
-    setBusy(true);
+    if (!active) return
+    setBusy(true)
     try {
       await api(`/projects/${active.id}`, {
         method: "PUT",
         body: JSON.stringify({ name, description, color }),
-      });
-      setEditing(false);
-      await loadProjects(active.id);
+      })
+      setEditing(false)
+      await loadProjects(active.id)
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
   async function deleteProject() {
-    if (!active) return;
-    setBusy(true);
-    setMessage("");
+    if (!active) return
+    setBusy(true)
+    setMessage("")
     try {
-      const result = await api<{ preservedReports: number }>(
-        `/projects/${active.id}`,
-        { method: "DELETE" },
-      );
-      setDeleting(false);
-      await loadProjects(undefined, true);
-      setMessage(
-        `Project dihapus. ${result.preservedReports} laporan tetap tersimpan.`,
-      );
+      const result = await api<{ preservedReports: number }>(`/projects/${active.id}`, {
+        method: "DELETE",
+      })
+      setDeleting(false)
+      await loadProjects(undefined, true)
+      setMessage(`Project dihapus. ${result.preservedReports} laporan tetap tersimpan.`)
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Project gagal dihapus.");
-      setDeleting(false);
+      setMessage(e instanceof Error ? e.message : "Project gagal dihapus.")
+      setDeleting(false)
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
   async function addSource(folderPath: string) {
-    if (!active) return;
-    setPicker(false);
-    setBusy(true);
-    setMessage("");
+    if (!active) return
+    setPicker(false)
+    setBusy(true)
+    setMessage("")
     try {
-      const result = await api<{ message: string }>(
-        `/projects/${active.id}/sources`,
-        {
-          method: "POST",
-          body: JSON.stringify({ folderPath, isWatching: true }),
-        },
-      );
-      setMessage(
-        `Pemindaian selesai: ${result.message}. Pilih file yang ingin diimpor.`,
-      );
-      await loadProjects(active.id);
+      const result = await api<{ message: string }>(`/projects/${active.id}/sources`, {
+        method: "POST",
+        body: JSON.stringify({ folderPath, isWatching: true }),
+      })
+      setMessage(`Pemindaian selesai: ${result.message}. Pilih file yang ingin diimpor.`)
+      await loadProjects(active.id)
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Gagal menambahkan folder.");
+      setMessage(e instanceof Error ? e.message : "Gagal menambahkan folder.")
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
-  async function sourceAction(
-    source: ProjectSource,
-    action: "import" | "ignore",
-  ) {
-    const ids = selected[source.id] || [];
-    if (!ids.length) return;
-    setBusy(true);
+  async function sourceAction(source: ProjectSource, action: "import" | "ignore") {
+    const ids = selected[source.id] || []
+    if (!ids.length) return
+    setBusy(true)
     try {
       await api("/source-files/actions", {
         method: "POST",
         body: JSON.stringify({ fileIds: ids, action }),
-      });
-      setSelected({ ...selected, [source.id]: [] });
-      await loadProjects(active!.id);
+      })
+      setSelected({ ...selected, [source.id]: [] })
+      await loadProjects(active!.id)
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
   async function sync(source: ProjectSource) {
-    setBusy(true);
+    setBusy(true)
     try {
-      const result = await api<{ message: string }>(
-        `/sources/${source.id}/sync`,
-        { method: "POST" },
-      );
-      setMessage(result.message);
-      await loadProjects(active!.id);
+      const result = await api<{ message: string }>(`/sources/${source.id}/sync`, {
+        method: "POST",
+      })
+      setMessage(result.message)
+      await loadProjects(active!.id)
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
   async function toggleWatch(source: ProjectSource) {
     await api(`/sources/${source.id}`, {
       method: "PUT",
       body: JSON.stringify({ isWatching: !source.is_watching }),
-    });
-    await loadProjects(active!.id);
+    })
+    await loadProjects(active!.id)
   }
   async function removeSource(source: ProjectSource) {
-    if (
-      !confirm(
-        "Hapus folder dari daftar? Laporan yang sudah diimpor tetap disimpan.",
-      )
-    )
-      return;
-    await api(`/sources/${source.id}`, { method: "DELETE" });
-    await loadProjects(active!.id);
+    if (!confirm("Hapus folder dari daftar? Laporan yang sudah diimpor tetap disimpan.")) return
+    await api(`/sources/${source.id}`, { method: "DELETE" })
+    await loadProjects(active!.id)
   }
   const pendingTotal = useMemo(
     () =>
-      active?.sources
-        ?.flatMap((source) => source.files)
-        .filter((file) => file.status === "pending").length || 0,
+      active?.sources?.flatMap((source) => source.files).filter((file) => file.status === "pending")
+        .length || 0,
     [active],
-  );
+  )
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      {picker && (
-        <FolderPicker onClose={() => setPicker(false)} onSelect={addSource} />
-      )}
+      {picker && <FolderPicker onClose={() => setPicker(false)} onSelect={addSource} />}
       {deleting && active && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-[#20251f]/45 p-4 backdrop-blur-sm">
           <Card className="w-full max-w-md p-6">
-            <h2 className="font-display text-lg font-medium">
-              Hapus project {active.name}?
-            </h2>
+            <h2 className="font-display text-lg font-medium">Hapus project {active.name}?</h2>
             <p className="mt-2 text-sm leading-6 text-[#747b71]">
-              Project, folder sumber, dan metadata sinkronisasinya akan dihapus.
-              Semua laporan yang sudah diimpor beserta lampirannya tetap
-              tersimpan dan tidak akan dihapus.
+              Project, folder sumber, dan metadata sinkronisasinya akan dihapus. Semua laporan yang
+              sudah diimpor beserta lampirannya tetap tersimpan dan tidak akan dihapus.
             </p>
             <div className="mt-6 flex justify-end gap-2">
-              <Button
-                $variant="secondary"
-                disabled={busy}
-                onClick={() => setDeleting(false)}
-              >
+              <Button $variant="secondary" disabled={busy} onClick={() => setDeleting(false)}>
                 Batal
               </Button>
               <Button $variant="danger" disabled={busy} onClick={deleteProject}>
@@ -509,20 +448,18 @@ export function Projects() {
           <p className="mb-2 text-xs font-medium uppercase tracking-[.15em] text-[#789168]">
             Workspace
           </p>
-          <h1 className="font-display text-3xl font-medium tracking-[-.04em]">
-            Project
-          </h1>
+          <h1 className="font-display text-3xl font-medium tracking-[-.04em]">Project</h1>
           <p className="mt-2 text-sm text-[#777d74]">
             Kelompokkan laporan dan setujui perubahan Markdown sebelum diimpor.
           </p>
         </div>
         <Button
           onClick={() => {
-            setEditing(false);
-            setName("");
-            setDescription("");
-            setColor(colors[0]);
-            setCreating(true);
+            setEditing(false)
+            setName("")
+            setDescription("")
+            setColor(colors[0])
+            setCreating(true)
           }}
         >
           <Plus size={16} /> Project baru
@@ -556,8 +493,8 @@ export function Projects() {
                   aria-label="Tutup modal"
                   disabled={busy}
                   onClick={() => {
-                    setCreating(false);
-                    setEditing(false);
+                    setCreating(false)
+                    setEditing(false)
                   }}
                   className="rounded-lg p-2 text-[#777e74] transition hover:bg-[#eef0ea]"
                 >
@@ -566,11 +503,7 @@ export function Projects() {
               </div>
               <div className="space-y-4 p-6">
                 <Field label="Nama project">
-                  <Input
-                    autoFocus
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
+                  <Input autoFocus value={name} onChange={(e) => setName(e.target.value)} />
                 </Field>
                 <Field label="Deskripsi">
                   <Textarea
@@ -601,8 +534,8 @@ export function Projects() {
                   $variant="ghost"
                   disabled={busy}
                   onClick={() => {
-                    setCreating(false);
-                    setEditing(false);
+                    setCreating(false)
+                    setEditing(false)
                   }}
                 >
                   Batal
@@ -611,11 +544,7 @@ export function Projects() {
                   disabled={!name.trim() || busy}
                   onClick={editing ? updateProject : createProject}
                 >
-                  {busy
-                    ? "Menyimpan…"
-                    : editing
-                      ? "Simpan perubahan"
-                      : "Buat project"}
+                  {busy ? "Menyimpan…" : editing ? "Simpan perubahan" : "Buat project"}
                 </Button>
               </div>
             </Card>
@@ -637,12 +566,9 @@ export function Projects() {
                     style={{ background: project.color }}
                   />
                   <div>
-                    <p className="font-display text-sm font-medium">
-                      {project.name}
-                    </p>
+                    <p className="font-display text-sm font-medium">{project.name}</p>
                     <p className="mt-1 text-xs text-[#858b82]">
-                      {project.report_count || 0} laporan ·{" "}
-                      {project.source_count || 0} sumber
+                      {project.report_count || 0} laporan · {project.source_count || 0} sumber
                     </p>
                   </div>
                 </div>
@@ -667,9 +593,7 @@ export function Projects() {
                     <FolderKanban size={21} />
                   </div>
                   <div className="min-w-48 flex-1">
-                    <h2 className="font-display text-xl font-medium">
-                      {active.name}
-                    </h2>
+                    <h2 className="font-display text-xl font-medium">{active.name}</h2>
                     <p className="mt-1 text-sm text-[#7b8178]">
                       {active.description || "Belum ada deskripsi."}
                     </p>
@@ -688,9 +612,7 @@ export function Projects() {
                       disabled={projects.length <= 1}
                       onClick={() => setDeleting(true)}
                       title={
-                        projects.length <= 1
-                          ? "Minimal satu project harus tersedia"
-                          : undefined
+                        projects.length <= 1 ? "Minimal satu project harus tersedia" : undefined
                       }
                     >
                       <Trash2 size={15} /> Hapus
@@ -707,12 +629,9 @@ export function Projects() {
                 <Card className="p-5">
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
-                      <h2 className="font-display font-medium">
-                        Folder sumber
-                      </h2>
+                      <h2 className="font-display font-medium">Folder sumber</h2>
                       <p className="mt-1 text-xs text-[#81877e]">
-                        File baru dan berubah tidak diimpor sampai Anda
-                        menyetujuinya.
+                        File baru dan berubah tidak diimpor sampai Anda menyetujuinya.
                       </p>
                     </div>
                     <Button onClick={() => setPicker(true)}>
@@ -730,9 +649,7 @@ export function Projects() {
                       setSelected({
                         ...selected,
                         [source.id]: (selected[source.id] || []).includes(id)
-                          ? (selected[source.id] || []).filter(
-                              (item) => item !== id,
-                            )
+                          ? (selected[source.id] || []).filter((item) => item !== id)
                           : [...(selected[source.id] || []), id],
                       })
                     }
@@ -771,5 +688,5 @@ export function Projects() {
         />
       )}
     </motion.div>
-  );
+  )
 }

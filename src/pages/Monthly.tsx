@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion } from "framer-motion"
 import {
   CalendarDays,
   CalendarRange,
@@ -9,56 +9,48 @@ import {
   Loader2,
   Sparkles,
   WandSparkles,
-} from "../components/heroicons";
-import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import { api, currentMonth } from "../api";
-import {
-  Button,
-  Card,
-  EmptyState,
-  Field,
-  Input,
-  MonthPicker,
-  Select,
-} from "../components/ui/index";
-import type { MonthlyReport, Project, Template } from "../types";
-import { useSecurity } from "../security";
+} from "../components/heroicons"
+import { useEffect, useState } from "react"
+import ReactMarkdown from "react-markdown"
+import { api, currentMonth } from "../api"
+import { Button, Card, EmptyState, Field, Input, MonthPicker, Select } from "../components/ui/index"
+import type { MonthlyReport, Project, Template } from "../types"
+import { useSecurity } from "../security"
 
-type Generated = MonthlyReport & { templateId?: number; count?: number };
+type Generated = MonthlyReport & { templateId?: number; count?: number }
 
 export function Monthly() {
-  const security = useSecurity();
+  const security = useSecurity()
   const [month, setMonth] = useState(currentMonth()),
     [templateId, setTemplateId] = useState(""),
-    [useAi, setUseAi] = useState(false);
+    [useAi, setUseAi] = useState(false)
   const [projects, setProjects] = useState<Project[]>([]),
-    [projectId, setProjectId] = useState("");
+    [projectId, setProjectId] = useState("")
   const [templates, setTemplates] = useState<Template[]>([]),
     [history, setHistory] = useState<MonthlyReport[]>([]),
-    [selected, setSelected] = useState<Generated | null>(null);
+    [selected, setSelected] = useState<Generated | null>(null)
   const [busy, setBusy] = useState(false),
-    [error, setError] = useState("");
+    [error, setError] = useState("")
   const load = () =>
     Promise.all([
       api<Template[]>("/templates").then((items) => {
-        setTemplates(items);
-        if (!templateId && items[0]) setTemplateId(String(items[0].id));
+        setTemplates(items)
+        if (!templateId && items[0]) setTemplateId(String(items[0].id))
       }),
       api<MonthlyReport[]>("/monthly").then(setHistory),
       api<Project[]>("/projects").then((items) => {
-        setProjects(items);
-        if (!projectId && items[0]) setProjectId(String(items[0].id));
+        setProjects(items)
+        if (!projectId && items[0]) setProjectId(String(items[0].id))
       }),
-    ]);
+    ])
   useEffect(() => {
-    void load();
-  }, []);
+    void load()
+  }, [])
   async function generate() {
-    setBusy(true);
-    setError("");
+    setBusy(true)
+    setError("")
     try {
-      const saved = await security.readAiConfig();
+      const saved = await security.readAiConfig()
       const data = await api<Generated>("/monthly/generate", {
         method: "POST",
         body: JSON.stringify({
@@ -68,13 +60,13 @@ export function Monthly() {
           useAi,
           ai: saved,
         }),
-      });
-      setSelected(data);
-      await load();
+      })
+      setSelected(data)
+      await load()
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal membuat laporan.");
+      setError(e instanceof Error ? e.message : "Gagal membuat laporan.")
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
   return (
@@ -92,8 +84,7 @@ export function Monthly() {
             Laporan bulanan
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-6 text-[#747b72]">
-            Rangkai catatan harian menjadi satu dokumen yang siap dibaca,
-            dibagikan, dan diekspor.
+            Rangkai catatan harian menjadi satu dokumen yang siap dibaca, dibagikan, dan diekspor.
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-2xl border border-[#e3e7df] bg-white/70 px-4 py-3 text-xs text-[#737b70]">
@@ -112,18 +103,13 @@ export function Monthly() {
                 </div>
                 <div>
                   <h2 className="font-display font-medium">Susun laporan</h2>
-                  <p className="mt-1 text-xs text-[#858c82]">
-                    Pilih sumber dan gaya dokumen
-                  </p>
+                  <p className="mt-1 text-xs text-[#858c82]">Pilih sumber dan gaya dokumen</p>
                 </div>
               </div>
             </div>
             <div className="space-y-4 p-6">
               <Field label="Project">
-                <Select
-                  value={projectId}
-                  onChange={(e) => setProjectId(e.target.value)}
-                >
+                <Select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
                   {projects.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.name}
@@ -139,10 +125,7 @@ export function Monthly() {
                 />
               </Field>
               <Field label="Template">
-                <Select
-                  value={templateId}
-                  onChange={(e) => setTemplateId(e.target.value)}
-                >
+                <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
                   {templates.map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.name}
@@ -161,30 +144,22 @@ export function Monthly() {
                 />
                 <span>
                   <span className="flex items-center gap-1.5 text-sm font-medium">
-                    <Sparkles size={14} className="text-[#75945e]" /> Ringkasan
-                    dengan AI
+                    <Sparkles size={14} className="text-[#75945e]" /> Ringkasan dengan AI
                   </span>
                   <span className="mt-1 block text-xs leading-5 text-[#82887f]">
-                    Buat ringkasan eksekutif dari catatan harian secara
-                    otomatis.
+                    Buat ringkasan eksekutif dari catatan harian secara otomatis.
                   </span>
                 </span>
               </label>
               {error && (
-                <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">
-                  {error}
-                </p>
+                <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>
               )}
               <Button
                 className="w-full !rounded-2xl !py-3"
                 onClick={generate}
                 disabled={busy || !month || !projectId}
               >
-                {busy ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <WandSparkles size={16} />
-                )}{" "}
+                {busy ? <Loader2 size={16} className="animate-spin" /> : <WandSparkles size={16} />}{" "}
                 {busy ? "Sedang merangkai…" : "Generate laporan"}
               </Button>
             </div>
@@ -192,9 +167,7 @@ export function Monthly() {
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-[#e8ebe4] px-5 py-4">
               <div>
-                <h2 className="font-display text-sm font-medium">
-                  Riwayat dokumen
-                </h2>
+                <h2 className="font-display text-sm font-medium">Riwayat dokumen</h2>
                 <p className="mt-1 text-[11px] text-[#858b82]">
                   {history.length} dokumen tersimpan
                 </p>
@@ -214,19 +187,14 @@ export function Monthly() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium">{item.title}</p>
                     <p className="mt-1 text-[10px] text-[#8b9188]">
-                      {item.report_count} laporan ·{" "}
-                      {item.created_at.slice(0, 10)}
+                      {item.report_count} laporan · {item.created_at.slice(0, 10)}
                     </p>
                   </div>
-                  {selected?.id === item.id && (
-                    <Check size={15} className="text-[#668456]" />
-                  )}
+                  {selected?.id === item.id && <Check size={15} className="text-[#668456]" />}
                 </button>
               ))}
               {!history.length && (
-                <p className="p-6 text-center text-xs text-[#858b82]">
-                  Belum ada riwayat dokumen.
-                </p>
+                <p className="p-6 text-center text-xs text-[#858b82]">Belum ada riwayat dokumen.</p>
               )}
             </div>
           </Card>
@@ -243,8 +211,8 @@ export function Monthly() {
                     {selected.title}
                   </h2>
                   <p className="mt-1 text-xs text-[#858b82]">
-                    {selected.report_count || selected.count || 0} laporan
-                    dirangkum dalam dokumen ini
+                    {selected.report_count || selected.count || 0} laporan dirangkum dalam dokumen
+                    ini
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -270,12 +238,10 @@ export function Monthly() {
                 <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-3xl bg-[#e7f2df] text-[#698457]">
                   <WandSparkles size={26} />
                 </div>
-                <h2 className="font-display text-lg font-medium">
-                  Preview laporan bulanan
-                </h2>
+                <h2 className="font-display text-lg font-medium">Preview laporan bulanan</h2>
                 <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[#747b72]">
-                  Pilih periode dan template, lalu generate untuk melihat
-                  dokumen hasil kompilasi di sini.
+                  Pilih periode dan template, lalu generate untuk melihat dokumen hasil kompilasi di
+                  sini.
                 </p>
               </div>
             </div>
@@ -283,5 +249,5 @@ export function Monthly() {
         </div>
       </div>
     </motion.div>
-  );
+  )
 }

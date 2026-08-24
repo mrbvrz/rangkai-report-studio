@@ -1,0 +1,11 @@
+dist/
+dev-dist/
+data/
+uploads/
+node_modules/
+package-lock.json
+docs/images/
+fixtures/
+tsconfig.app.tsbuildinfo
+tsconfig.node.tsbuildinfo
+vite.config.d.ts

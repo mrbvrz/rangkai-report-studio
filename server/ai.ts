@@ -1,17 +1,12 @@
 export type AiSettings = {
-  provider?: "openai" | "gemini" | "anthropic" | "openrouter";
-  apiKey?: string;
-  baseUrl?: string;
-  model?: string;
-};
+  provider?: "openai" | "gemini" | "anthropic" | "openrouter"
+  apiKey?: string
+  baseUrl?: string
+  model?: string
+}
 
 export type AiWritingAction =
-  | "improve"
-  | "expand"
-  | "summarize"
-  | "structure"
-  | "translate"
-  | "continue";
+  "improve" | "expand" | "summarize" | "structure" | "translate" | "continue"
 
 export const writingPrompts: Record<AiWritingAction, string> = {
   improve:
@@ -26,17 +21,13 @@ export const writingPrompts: Record<AiWritingAction, string> = {
     "Terjemahkan konten berikut ke Bahasa Indonesia yang natural dan profesional untuk konteks laporan kerja.",
   continue:
     "Lanjutkan penulisan laporan berikut secara natural berdasarkan konteks dan alur yang sudah ada. Pertahankan gaya bahasa dan format yang sama.",
-};
+}
 
-export function buildWritingInput(
-  action: AiWritingAction,
-  content: string,
-  context?: string,
-) {
-  const system = writingPrompts[action];
+export function buildWritingInput(action: AiWritingAction, content: string, context?: string) {
+  const system = writingPrompts[action]
   return context
     ? `${system}\n\nKonteks tambahan: ${context}\n\nKonten:\n${content}`
-    : `${system}\n\nKonten:\n${content}`;
+    : `${system}\n\nKonten:\n${content}`
 }
 
 async function postJson(
@@ -49,9 +40,9 @@ async function postJson(
     method: "POST",
     headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
-  });
-  if (!response.ok) throw new Error(`${label} merespons ${response.status}.`);
-  return (await response.json()) as unknown;
+  })
+  if (!response.ok) throw new Error(`${label} merespons ${response.status}.`)
+  return (await response.json()) as unknown
 }
 
 export async function generateAiWriting(
@@ -60,26 +51,16 @@ export async function generateAiWriting(
   action: AiWritingAction,
   context?: string,
 ) {
-  if (!ai.apiKey || !ai.baseUrl || !ai.model)
-    throw new Error("Konfigurasi AI belum lengkap.");
-  const input = buildWritingInput(action, content, context);
-  const baseUrl = ai.baseUrl.replace(/\/$/, "");
-  let data: unknown;
+  if (!ai.apiKey || !ai.baseUrl || !ai.model) throw new Error("Konfigurasi AI belum lengkap.")
+  const input = buildWritingInput(action, content, context)
+  const baseUrl = ai.baseUrl.replace(/\/$/, "")
+  let data: unknown
   if (ai.provider === "gemini") {
-    const url = `${baseUrl}/models/${encodeURIComponent(ai.model)}:generateContent?key=${encodeURIComponent(ai.apiKey)}`;
-    data = await postJson(
-      url,
-      "Gemini",
-      {},
-      { contents: [{ parts: [{ text: input }] }] },
-    );
-    const candidates = (
-      data as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
-    ).candidates;
-    return (
-      candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") ||
-      ""
-    );
+    const url = `${baseUrl}/models/${encodeURIComponent(ai.model)}:generateContent?key=${encodeURIComponent(ai.apiKey)}`
+    data = await postJson(url, "Gemini", {}, { contents: [{ parts: [{ text: input }] }] })
+    const candidates = (data as { candidates?: { content?: { parts?: { text?: string }[] } }[] })
+      .candidates
+    return candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || ""
   }
   if (ai.provider === "anthropic") {
     data = await postJson(
@@ -92,15 +73,14 @@ export async function generateAiWriting(
         system: writingPrompts[action],
         messages: [{ role: "user", content: input }],
       },
-    );
-    const blocks = (data as { content?: { type: string; text?: string }[] })
-      .content;
+    )
+    const blocks = (data as { content?: { type: string; text?: string }[] }).content
     return (
       blocks
         ?.filter((item) => item.type === "text")
         .map((item) => item.text || "")
         .join("") || ""
-    );
+    )
   }
   if (ai.provider === "openrouter") {
     data = await postJson(
@@ -114,21 +94,20 @@ export async function generateAiWriting(
           { role: "user", content: input },
         ],
       },
-    );
-    const choices = (data as { choices?: { message?: { content?: string } }[] })
-      .choices;
-    return choices?.[0]?.message?.content || "";
+    )
+    const choices = (data as { choices?: { message?: { content?: string } }[] }).choices
+    return choices?.[0]?.message?.content || ""
   }
   data = await postJson(
     `${baseUrl}/responses`,
     "OpenAI",
     { Authorization: `Bearer ${ai.apiKey}` },
     { model: ai.model, instructions: writingPrompts[action], input },
-  );
+  )
   const payload = data as {
-    output_text?: string;
-    output?: { content?: { type: string; text?: string }[] }[];
-  };
+    output_text?: string
+    output?: { content?: { type: string; text?: string }[] }[]
+  }
   return (
     payload.output_text ||
     payload.output
@@ -137,5 +116,5 @@ export async function generateAiWriting(
       .map((item) => item.text || "")
       .join("") ||
     ""
-  );
+  )
 }

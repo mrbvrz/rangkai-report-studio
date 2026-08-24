@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion"
 import {
   Check,
   DatabaseBackup,
@@ -10,20 +10,20 @@ import {
   ShieldCheck,
   Sparkles,
   Trash2,
-} from "../components/heroicons";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../api";
-import { Button, Card, Field, Input } from "../components/ui/index";
-import { useSecurity, validatePassphrase } from "../security";
+} from "../components/heroicons"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { api } from "../api"
+import { Button, Card, Field, Input } from "../components/ui/index"
+import { useSecurity, validatePassphrase } from "../security"
 
-type ProviderId = "openai" | "gemini" | "anthropic" | "openrouter";
+type ProviderId = "openai" | "gemini" | "anthropic" | "openrouter"
 type AiConfig = {
-  provider: ProviderId;
-  apiKey: string;
-  model: string;
-  baseUrl?: string;
-};
-type Tab = "ai" | "security" | "data";
+  provider: ProviderId
+  apiKey: string
+  model: string
+  baseUrl?: string
+}
+type Tab = "ai" | "security" | "data"
 const providers = [
   {
     id: "openai" as const,
@@ -61,39 +61,36 @@ const providers = [
     baseUrl: "https://openrouter.ai/api/v1",
     modelHint: "Contoh: openai/gpt-4.1-mini",
   },
-];
+]
 
 export function Settings() {
-  const security = useSecurity();
+  const security = useSecurity()
   const [tab, setTab] = useState<Tab>("ai"),
-    [provider, setProvider] = useState<ProviderId>("openai");
-  const active = useMemo(
-    () => providers.find((item) => item.id === provider)!,
-    [provider],
-  );
+    [provider, setProvider] = useState<ProviderId>("openai")
+  const active = useMemo(() => providers.find((item) => item.id === provider)!, [provider])
   const [apiKey, setApiKey] = useState(""),
     [model, setModel] = useState(""),
     [baseUrl, setBaseUrl] = useState(active.baseUrl),
-    [saved, setSaved] = useState(false);
+    [saved, setSaved] = useState(false)
   useEffect(() => {
     void security.readAiConfig<AiConfig>().then((stored) => {
-      if (stored.provider) setProvider(stored.provider);
-      if (stored.apiKey) setApiKey(stored.apiKey);
-      if (stored.model) setModel(stored.model);
-      if (stored.baseUrl) setBaseUrl(stored.baseUrl);
-    });
-  }, []);
+      if (stored.provider) setProvider(stored.provider)
+      if (stored.apiKey) setApiKey(stored.apiKey)
+      if (stored.model) setModel(stored.model)
+      if (stored.baseUrl) setBaseUrl(stored.baseUrl)
+    })
+  }, [])
   function chooseProvider(id: ProviderId) {
-    const next = providers.find((item) => item.id === id)!;
-    setProvider(id);
-    setBaseUrl(next.baseUrl);
-    setModel("");
-    setSaved(false);
+    const next = providers.find((item) => item.id === id)!
+    setProvider(id)
+    setBaseUrl(next.baseUrl)
+    setModel("")
+    setSaved(false)
   }
   async function save() {
-    await security.saveAiConfig({ provider, baseUrl, model, apiKey });
-    setSaved(true);
-    window.setTimeout(() => setSaved(false), 2200);
+    await security.saveAiConfig({ provider, baseUrl, model, apiKey })
+    setSaved(true)
+    window.setTimeout(() => setSaved(false), 2200)
   }
   const tabs = [
     {
@@ -114,16 +111,14 @@ export function Settings() {
       detail: "Export, import & reset",
       icon: DatabaseBackup,
     },
-  ];
+  ]
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="mb-7">
         <p className="mb-2 text-xs font-medium uppercase tracking-[.15em] text-[#789168]">
           Workspace
         </p>
-        <h1 className="font-display text-3xl font-medium tracking-[-.04em]">
-          Pengaturan
-        </h1>
+        <h1 className="font-display text-3xl font-medium tracking-[-.04em]">Pengaturan</h1>
         <p className="mt-2 text-sm text-[#777d74]">
           Kelola preferensi, keamanan, dan data aplikasi.
         </p>
@@ -143,12 +138,8 @@ export function Settings() {
                   <Icon size={17} />
                 </span>
                 <span className="min-w-0">
-                  <span className="block truncate font-display text-sm font-medium">
-                    {label}
-                  </span>
-                  <small className="mt-0.5 block truncate text-[10px] opacity-65">
-                    {detail}
-                  </small>
+                  <span className="block truncate font-display text-sm font-medium">{label}</span>
+                  <small className="mt-0.5 block truncate text-[10px] opacity-65">{detail}</small>
                 </span>
               </button>
             ))}
@@ -191,7 +182,7 @@ export function Settings() {
         </motion.section>
       </div>
     </motion.div>
-  );
+  )
 }
 
 function ProviderLogo({ id }: { id: ProviderId }) {
@@ -206,7 +197,7 @@ function ProviderLogo({ id }: { id: ProviderId }) {
         <path d="M16 5.5a6 6 0 0 1 5.2 3l.7 1.3a6 6 0 0 1 3.4 8.9 6 6 0 0 1-6.3 7.1 6 6 0 0 1-7.6 1.4 6 6 0 0 1-5.2-3l-.7-1.3a6 6 0 0 1-3.4-8.9 6 6 0 0 1 6.3-7.1A6 6 0 0 1 16 5.5Z" />
         <path d="m11.2 11.3 5.1-2.9 4.8 2.8v5.7l-5 2.9-4.9-2.8v-5.7Zm0 5.7-4.9 2.9m9.8-2.9v5.7m0-11.4 4.9-2.9" />
       </svg>
-    );
+    )
   if (id === "gemini")
     return (
       <svg aria-hidden="true" viewBox="0 0 32 32" className="h-7 w-7">
@@ -219,18 +210,14 @@ function ProviderLogo({ id }: { id: ProviderId }) {
           d="M7 24c.5 2.6 1.8 4 4.5 4.5C8.8 29 7.5 30.2 7 33c-.5-2.8-1.8-4-4.5-4.5C5.2 28 6.5 26.6 7 24Z"
         />
       </svg>
-    );
+    )
   if (id === "anthropic")
     return (
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 32 32"
-        className="h-7 w-7 fill-white"
-      >
+      <svg aria-hidden="true" viewBox="0 0 32 32" className="h-7 w-7 fill-white">
         <path d="M16 3.5 19 12l8.5 3-8.5 3-3 8.5-3-8.5-8.5-3 8.5-3 3-8.5Z" />
         <path d="m25.5 4.5 1.1 3.1 3.1 1.1-3.1 1.1-1.1 3.1-1.1-3.1-3.1-1.1 3.1-1.1 1.1-3.1Z" />
       </svg>
-    );
+    )
   return (
     <svg
       aria-hidden="true"
@@ -240,7 +227,7 @@ function ProviderLogo({ id }: { id: ProviderId }) {
     >
       <path d="m6 8 8 8-8 8M18 8l8 8-8 8" />
     </svg>
-  );
+  )
 }
 
 function AiPanel({
@@ -257,18 +244,18 @@ function AiPanel({
   setBaseUrl,
   save,
 }: {
-  active: (typeof providers)[number];
-  provider: ProviderId;
-  apiKey: string;
-  model: string;
-  baseUrl: string;
-  saved: boolean;
-  encrypted: boolean;
-  chooseProvider: (id: ProviderId) => void;
-  setApiKey: (v: string) => void;
-  setModel: (v: string) => void;
-  setBaseUrl: (v: string) => void;
-  save: () => Promise<void>;
+  active: (typeof providers)[number]
+  provider: ProviderId
+  apiKey: string
+  model: string
+  baseUrl: string
+  saved: boolean
+  encrypted: boolean
+  chooseProvider: (id: ProviderId) => void
+  setApiKey: (v: string) => void
+  setModel: (v: string) => void
+  setBaseUrl: (v: string) => void
+  save: () => Promise<void>
 }) {
   return (
     <div className="space-y-5">
@@ -300,9 +287,7 @@ function AiPanel({
             <p className="mt-1 text-[10px] font-medium uppercase tracking-[.12em] text-[#92978f]">
               {item.company}
             </p>
-            <p className="mt-3 text-xs leading-5 text-[#777d74]">
-              {item.description}
-            </p>
+            <p className="mt-3 text-xs leading-5 text-[#777d74]">{item.description}</p>
           </button>
         ))}
       </div>
@@ -316,21 +301,13 @@ function AiPanel({
               <ProviderLogo id={active.id} />
             </div>
             <div>
-              <h2 className="font-display font-medium">
-                Konfigurasi {active.name}
-              </h2>
-              <p className="text-xs text-[#858b82]">
-                Kredensial untuk {active.company}
-              </p>
+              <h2 className="font-display font-medium">Konfigurasi {active.name}</h2>
+              <p className="text-xs text-[#858b82]">Kredensial untuk {active.company}</p>
             </div>
           </div>
           <div className="space-y-5">
             <Field label="API key">
-              <Input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-              />
+              <Input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
             </Field>
             <Field label="Model">
               <Input
@@ -340,10 +317,7 @@ function AiPanel({
               />
             </Field>
             <Field label="Base URL">
-              <Input
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-              />
+              <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
             </Field>
             <Button disabled={!apiKey || !model} onClick={() => void save()}>
               {saved ? <Check size={16} /> : <Save size={16} />}{" "}
@@ -364,7 +338,7 @@ function AiPanel({
         </Card>
       </div>
     </div>
-  );
+  )
 }
 
 function SecurityPanel() {
@@ -377,62 +351,51 @@ function SecurityPanel() {
     [encrypt, setEncrypt] = useState(true),
     [error, setError] = useState(""),
     [recoveryCode, setRecoveryCode] = useState(""),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false)
   async function enable() {
-    const issue = validatePassphrase(passphrase);
-    if (issue) return setError(issue);
-    if (passphrase !== confirm)
-      return setError("Konfirmasi passphrase tidak sama.");
-    setBusy(true);
-    setError("");
+    const issue = validatePassphrase(passphrase)
+    if (issue) return setError(issue)
+    if (passphrase !== confirm) return setError("Konfirmasi passphrase tidak sama.")
+    setBusy(true)
+    setError("")
     try {
-      setRecoveryCode(await security.createProtection(passphrase, encrypt));
-      setPassphrase("");
-      setConfirm("");
+      setRecoveryCode(await security.createProtection(passphrase, encrypt))
+      setPassphrase("")
+      setConfirm("")
     } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : "Gagal mengaktifkan keamanan.",
-      );
+      setError(reason instanceof Error ? reason.message : "Gagal mengaktifkan keamanan.")
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
   async function changePassphrase() {
-    const issue = validatePassphrase(nextPassphrase);
-    if (issue) return setError(issue);
-    if (nextPassphrase !== nextConfirm)
-      return setError("Konfirmasi passphrase baru tidak sama.");
-    setBusy(true);
-    setError("");
+    const issue = validatePassphrase(nextPassphrase)
+    if (issue) return setError(issue)
+    if (nextPassphrase !== nextConfirm) return setError("Konfirmasi passphrase baru tidak sama.")
+    setBusy(true)
+    setError("")
     try {
-      await security.changePassphrase(currentPassphrase, nextPassphrase);
-      setCurrentPassphrase("");
-      setNextPassphrase("");
-      setNextConfirm("");
+      await security.changePassphrase(currentPassphrase, nextPassphrase)
+      setCurrentPassphrase("")
+      setNextPassphrase("")
+      setNextConfirm("")
     } catch (reason) {
-      setError(
-        reason instanceof Error ? reason.message : "Gagal mengubah passphrase.",
-      );
+      setError(reason instanceof Error ? reason.message : "Gagal mengubah passphrase.")
     } finally {
-      setBusy(false);
+      setBusy(false)
     }
   }
   function downloadCode() {
     const url = URL.createObjectURL(
-      new Blob(
-        [
-          `RANGKAI RECOVERY CODE\n\n${recoveryCode}\n\nSimpan file ini di tempat aman.`,
-        ],
-        { type: "text/plain" },
-      ),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "rangkai-recovery-code.txt";
-    link.click();
-    URL.revokeObjectURL(url);
+      new Blob([`RANGKAI RECOVERY CODE\n\n${recoveryCode}\n\nSimpan file ini di tempat aman.`], {
+        type: "text/plain",
+      }),
+    )
+    const link = document.createElement("a")
+    link.href = url
+    link.download = "rangkai-recovery-code.txt"
+    link.click()
+    URL.revokeObjectURL(url)
   }
   return (
     <div className="max-w-3xl space-y-5">
@@ -468,12 +431,35 @@ function SecurityPanel() {
                 Passphrase baru juga akan digunakan untuk membuka database lokal.
               </p>
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                <Input type="password" value={currentPassphrase} onChange={(e) => setCurrentPassphrase(e.target.value)} placeholder="Passphrase saat ini" />
-                <Input type="password" value={nextPassphrase} onChange={(e) => setNextPassphrase(e.target.value)} placeholder="Passphrase baru" />
-                <Input type="password" value={nextConfirm} onChange={(e) => setNextConfirm(e.target.value)} placeholder="Konfirmasi baru" />
+                <Input
+                  type="password"
+                  value={currentPassphrase}
+                  onChange={(e) => setCurrentPassphrase(e.target.value)}
+                  placeholder="Passphrase saat ini"
+                />
+                <Input
+                  type="password"
+                  value={nextPassphrase}
+                  onChange={(e) => setNextPassphrase(e.target.value)}
+                  placeholder="Passphrase baru"
+                />
+                <Input
+                  type="password"
+                  value={nextConfirm}
+                  onChange={(e) => setNextConfirm(e.target.value)}
+                  placeholder="Konfirmasi baru"
+                />
               </div>
-              {error && <p className="mt-3 rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>}
-              <Button className="mt-4" disabled={busy || !currentPassphrase || !nextPassphrase || !nextConfirm} onClick={() => void changePassphrase()}>
+              {error && (
+                <p className="mt-3 rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">
+                  {error}
+                </p>
+              )}
+              <Button
+                className="mt-4"
+                disabled={busy || !currentPassphrase || !nextPassphrase || !nextConfirm}
+                onClick={() => void changePassphrase()}
+              >
                 <KeyRound size={16} /> {busy ? "Mengubah…" : "Ganti passphrase"}
               </Button>
             </div>
@@ -514,25 +500,17 @@ function SecurityPanel() {
                 className="mt-1 accent-[#647f55]"
               />
               <span>
-                <strong className="block text-sm">
-                  Enkripsi kredensial lokal
-                </strong>
+                <strong className="block text-sm">Enkripsi kredensial lokal</strong>
                 <small className="mt-1 block text-[#7b8278]">
                   Gunakan passphrase sebagai kunci AES-GCM.
                 </small>
               </span>
             </label>
             {error && (
-              <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">
-                {error}
-              </p>
+              <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>
             )}
-            <Button
-              disabled={busy || !passphrase || !confirm}
-              onClick={() => void enable()}
-            >
-              <ShieldCheck size={16} />{" "}
-              {busy ? "Menyiapkan…" : "Aktifkan passphrase"}
+            <Button disabled={busy || !passphrase || !confirm} onClick={() => void enable()}>
+              <ShieldCheck size={16} /> {busy ? "Menyiapkan…" : "Aktifkan passphrase"}
             </Button>
           </div>
         )}
@@ -542,12 +520,8 @@ function SecurityPanel() {
           <div className="flex gap-3">
             <KeyRound className="text-[#8a7138]" />
             <div>
-              <h3 className="font-display font-medium">
-                Simpan recovery code sekarang
-              </h3>
-              <p className="mt-1 text-xs text-[#7c745f]">
-                Kode hanya ditampilkan sekali.
-              </p>
+              <h3 className="font-display font-medium">Simpan recovery code sekarang</h3>
+              <p className="mt-1 text-xs text-[#7c745f]">Kode hanya ditampilkan sekali.</p>
             </div>
           </div>
           <code className="mt-5 block break-all rounded-xl border bg-white p-4 text-sm font-medium leading-7">
@@ -559,87 +533,80 @@ function SecurityPanel() {
         </Card>
       )}
     </div>
-  );
+  )
 }
 
 function DataPanel() {
   const inputRef = useRef<HTMLInputElement>(null),
     [busy, setBusy] = useState(""),
     [message, setMessage] = useState(""),
-    [confirmAction, setConfirmAction] = useState<
-      "reports" | "all" | "restore" | null
-    >(null),
-    [pendingFile, setPendingFile] = useState<File | null>(null);
+    [confirmAction, setConfirmAction] = useState<"reports" | "all" | "restore" | null>(null),
+    [pendingFile, setPendingFile] = useState<File | null>(null)
   async function exportBackup() {
-    const passphrase = window.prompt(
-      "Masukkan passphrase untuk mengenkripsi backup.",
-    );
-    if (!passphrase) return;
-    setBusy("export");
+    const passphrase = window.prompt("Masukkan passphrase untuk mengenkripsi backup.")
+    if (!passphrase) return
+    setBusy("export")
     try {
       const response = await fetch("/api/settings/backup/encrypted", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ passphrase }),
-      });
+      })
       if (!response.ok)
         throw new Error(
-          ((await response.json()) as { message?: string }).message ||
-            "Backup gagal dibuat.",
-        );
+          ((await response.json()) as { message?: string }).message || "Backup gagal dibuat.",
+        )
       const url = URL.createObjectURL(await response.blob()),
-        link = document.createElement("a");
-      link.href = url;
-      link.download = `rangkai-backup-${new Date().toISOString().slice(0, 10)}.encrypted.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-      setMessage("Backup terenkripsi berhasil dibuat.");
+        link = document.createElement("a")
+      link.href = url
+      link.download = `rangkai-backup-${new Date().toISOString().slice(0, 10)}.encrypted.json`
+      link.click()
+      URL.revokeObjectURL(url)
+      setMessage("Backup terenkripsi berhasil dibuat.")
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Backup gagal dibuat.");
+      setMessage(e instanceof Error ? e.message : "Backup gagal dibuat.")
     } finally {
-      setBusy("");
+      setBusy("")
     }
   }
   async function restore() {
-    if (!pendingFile) return;
-    const passphrase = window.prompt("Masukkan passphrase backup.");
-    if (!passphrase) return;
-    setBusy("restore");
-    setMessage("");
+    if (!pendingFile) return
+    const passphrase = window.prompt("Masukkan passphrase backup.")
+    if (!passphrase) return
+    setBusy("restore")
+    setMessage("")
     try {
-      const form = new FormData();
-      form.append("backup", pendingFile);
-      form.append("passphrase", passphrase);
+      const form = new FormData()
+      form.append("backup", pendingFile)
+      form.append("passphrase", passphrase)
       const response = await fetch("/api/settings/restore", {
         method: "POST",
         body: form,
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.message);
-      setMessage("Backup berhasil dipulihkan. Memuat ulang aplikasi…");
-      window.setTimeout(() => location.reload(), 900);
+      })
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.message)
+      setMessage("Backup berhasil dipulihkan. Memuat ulang aplikasi…")
+      window.setTimeout(() => location.reload(), 900)
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Restore gagal.");
+      setMessage(e instanceof Error ? e.message : "Restore gagal.")
     } finally {
-      setBusy("");
-      setConfirmAction(null);
+      setBusy("")
+      setConfirmAction(null)
     }
   }
   async function remove(scope: "reports" | "all") {
-    setBusy(scope);
-    setMessage("");
+    setBusy(scope)
+    setMessage("")
     try {
-      await api(`/settings/data/${scope}`, { method: "DELETE" });
+      await api(`/settings/data/${scope}`, { method: "DELETE" })
       setMessage(
-        scope === "all"
-          ? "Workspace berhasil direset."
-          : "Semua laporan berhasil dihapus.",
-      );
-      setConfirmAction(null);
+        scope === "all" ? "Workspace berhasil direset." : "Semua laporan berhasil dihapus.",
+      )
+      setConfirmAction(null)
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Penghapusan gagal.");
+      setMessage(e instanceof Error ? e.message : "Penghapusan gagal.")
     } finally {
-      setBusy("");
+      setBusy("")
     }
   }
   return (
@@ -656,23 +623,15 @@ function DataPanel() {
           <div>
             <h3 className="font-display font-medium">Backup workspace</h3>
             <p className="mt-1 text-xs leading-5 text-[#7d837a]">
-              Export mencakup project, laporan, template, sumber sinkronisasi,
-              dan file lampiran.
+              Export mencakup project, laporan, template, sumber sinkronisasi, dan file lampiran.
             </p>
           </div>
         </div>
         <div className="mt-5 flex flex-wrap gap-3">
-          <Button
-            disabled={busy === "export"}
-            onClick={() => void exportBackup()}
-          >
-            <Download size={15} />{" "}
-            {busy === "export" ? "Mengenkripsi…" : "Export backup"}
+          <Button disabled={busy === "export"} onClick={() => void exportBackup()}>
+            <Download size={15} /> {busy === "export" ? "Mengenkripsi…" : "Export backup"}
           </Button>
-          <Button
-            $variant="secondary"
-            onClick={() => inputRef.current?.click()}
-          >
+          <Button $variant="secondary" onClick={() => inputRef.current?.click()}>
             <FileUp size={15} /> Import backup
           </Button>
           <input
@@ -681,10 +640,10 @@ function DataPanel() {
             type="file"
             accept="application/json,.json"
             onChange={(e) => {
-              const file = e.target.files?.[0];
+              const file = e.target.files?.[0]
               if (file) {
-                setPendingFile(file);
-                setConfirmAction("restore");
+                setPendingFile(file)
+                setConfirmAction("restore")
               }
             }}
           />
@@ -737,8 +696,8 @@ function DataPanel() {
               <Button
                 $variant="secondary"
                 onClick={() => {
-                  setConfirmAction(null);
-                  setPendingFile(null);
+                  setConfirmAction(null)
+                  setPendingFile(null)
                 }}
               >
                 Batal
@@ -747,9 +706,7 @@ function DataPanel() {
                 $variant="danger"
                 disabled={Boolean(busy)}
                 onClick={() =>
-                  confirmAction === "restore"
-                    ? void restore()
-                    : void remove(confirmAction)
+                  confirmAction === "restore" ? void restore() : void remove(confirmAction)
                 }
               >
                 {busy ? "Memproses…" : "Ya, lanjutkan"}
@@ -759,5 +716,5 @@ function DataPanel() {
         </div>
       )}
     </div>
-  );
+  )
 }
