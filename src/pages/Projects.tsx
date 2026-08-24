@@ -1,7 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion"
 import {
   ArrowLeft,
-  CheckCircle2,
   ChevronRight,
   FileClock,
   FileText,
@@ -15,7 +14,6 @@ import {
   RefreshCw,
   Trash2,
   X,
-  XCircle,
 } from "../components/heroicons"
 import { useEffect, useMemo, useState } from "react"
 import { api } from "../api"

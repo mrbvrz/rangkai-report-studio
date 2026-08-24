@@ -121,14 +121,6 @@ export function Reports() {
   const visibleReports = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
   const firstResult = filtered.length ? (currentPage - 1) * pageSize + 1 : 0
   const lastResult = Math.min(currentPage * pageSize, filtered.length)
-  const paginationItems = useMemo<(number | "ellipsis")[]>(() => {
-    if (pageCount <= 7) return Array.from({ length: pageCount }, (_, index) => index + 1)
-    const pages = new Set([1, pageCount, currentPage, currentPage - 1, currentPage + 1])
-    const ordered = [...pages].filter((item) => item > 0 && item <= pageCount).sort((a, b) => a - b)
-    return ordered.flatMap((item, index) =>
-      index && item - ordered[index - 1] > 1 ? ["ellipsis", item] : [item],
-    )
-  }, [currentPage, pageCount])
   async function remove(id: number) {
     setBusy(true)
     try {

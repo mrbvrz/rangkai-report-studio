@@ -80,13 +80,16 @@ export function syncSource(sourceId: number) {
         alreadyImported ? "imported" : "pending",
         alreadyImported ? "unchanged" : report ? "modified" : "new",
       )
-      if (!alreadyImported) report ? pendingModified++ : pendingNew++
-      else unchanged++
+      if (!alreadyImported) {
+        if (report) pendingModified++
+        else pendingNew++
+      } else unchanged++
     } else if (file.file_mtime !== mtime) {
       db.prepare(
         "UPDATE source_files SET file_mtime = ?, status = 'pending', change_type = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
       ).run(mtime, file.report_id ? "modified" : "new", file.id)
-      file.report_id ? pendingModified++ : pendingNew++
+      if (file.report_id) pendingModified++
+      else pendingNew++
     } else unchanged++
   }
   const files = db

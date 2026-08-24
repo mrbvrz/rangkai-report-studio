@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion"
-import { Eye, EyeSlash, KeyRound, LockKeyhole, ShieldCheck } from "./components/heroicons"
+import { Eye, EyeSlash, KeyRound, LockKeyhole } from "./components/heroicons"
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react"
 import { Button, Input } from "./components/ui"
 

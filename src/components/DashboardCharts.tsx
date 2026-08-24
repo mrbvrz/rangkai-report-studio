@@ -420,13 +420,13 @@ export function ProjectDistributionChart({ projects }: { projects: ProjectSeries
   const total = series.reduce((sum, project) => sum + project.total, 0)
   const radius = 72,
     circumference = 2 * Math.PI * radius
-  let runningOffset = 0
-  const segments = series.map((project) => {
+  type Segment = (typeof series)[number] & { length: number; offset: number }
+  const segments = series.reduce<Segment[]>((acc, project) => {
+    const previous = acc[acc.length - 1]
+    const offset = previous ? previous.offset + previous.length : 0
     const length = total ? (project.total / total) * circumference : 0
-    const segment = { ...project, length, offset: runningOffset }
-    runningOffset += length
-    return segment
-  })
+    return [...acc, { ...project, length, offset }]
+  }, [])
   const active =
     hovered === null ? null : segments.find((project) => project.id === hovered) || null
   return (

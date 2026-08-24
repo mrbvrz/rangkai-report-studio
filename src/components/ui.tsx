@@ -252,7 +252,6 @@ export function Select({
   className = "",
   dropUp = false,
   compact = false,
-  ...props
 }: SelectProps) {
   const [open, setOpen] = useState(false),
     ref = useRef<HTMLDivElement>(null)

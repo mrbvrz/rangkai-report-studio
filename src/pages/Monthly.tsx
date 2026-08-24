@@ -13,7 +13,7 @@ import {
 import { useEffect, useState } from "react"
 import ReactMarkdown from "react-markdown"
 import { api, currentMonth } from "../api"
-import { Button, Card, EmptyState, Field, Input, MonthPicker, Select } from "../components/ui/index"
+import { Button, Card, Field, MonthPicker, Select } from "../components/ui/index"
 import type { MonthlyReport, Project, Template } from "../types"
 import { useSecurity } from "../security"
 
