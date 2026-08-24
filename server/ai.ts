@@ -45,6 +45,48 @@ async function postJson(
   return (await response.json()) as unknown
 }
 
+// Mitigasi SSRF: baseUrl berasal dari input klien, jadi server tidak boleh
+// mem-fetch target internal. Wajib https dan host publik; gateway/proxy
+// kustom ber-https tetap diizinkan.
+export function assertSafeBaseUrl(baseUrl: string) {
+  let parsed: URL
+  try {
+    parsed = new URL(baseUrl)
+  } catch {
+    throw new Error("Base URL AI tidak valid.")
+  }
+  if (parsed.protocol !== "https:") throw new Error("Base URL AI wajib menggunakan https.")
+  const host = parsed.hostname.replace(/^\[|\]$/g, "").toLowerCase()
+  if (host === "localhost" || host.endsWith(".internal") || host.endsWith(".local"))
+    throw new Error("Base URL AI tidak boleh menunjuk ke host internal.")
+  if (isPrivateV4(host)) rejectPrivate()
+  if (host === "::1" || host === "::" || host.startsWith("fc") || host.startsWith("fd"))
+    rejectPrivate()
+  if (/^fe[89ab]/.test(host)) rejectPrivate()
+  // IPv4-mapped IPv6 (::ffff:10.0.0.5). URL menormalkan ke hex terkompresi
+  // (mis. "::ffff:a00:5"), jadi dekode dua grup terakhir kembali ke IPv4.
+  const mappedIndex = host.lastIndexOf("ffff:")
+  if (mappedIndex !== -1) {
+    const tail = host.slice(mappedIndex + 5)
+    if (/^\d+(\.\d+){3}$/.test(tail)) {
+      if (isPrivateV4(tail)) rejectPrivate()
+    } else {
+      const parts = tail.split(":").filter(Boolean)
+      if (parts.length >= 2) {
+        const hi = parseInt(parts[parts.length - 2], 16)
+        const lo = parseInt(parts[parts.length - 1], 16)
+        if (isPrivateV4(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`)) rejectPrivate()
+      }
+    }
+  }
+}
+function rejectPrivate(): never {
+  throw new Error("Base URL AI tidak boleh menunjuk ke alamat privat.")
+}
+function isPrivateV4(ip: string) {
+  return /^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(ip) || /^172\.(1[6-9]|2\d|3[01])\./.test(ip)
+}
+
 export async function generateAiWriting(
   ai: AiSettings,
   content: string,
@@ -52,6 +94,7 @@ export async function generateAiWriting(
   context?: string,
 ) {
   if (!ai.apiKey || !ai.baseUrl || !ai.model) throw new Error("Konfigurasi AI belum lengkap.")
+  assertSafeBaseUrl(ai.baseUrl)
   const input = buildWritingInput(action, content, context)
   const baseUrl = ai.baseUrl.replace(/\/$/, "")
   let data: unknown

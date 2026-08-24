@@ -16,7 +16,12 @@ import {
   unlockDatabase,
 } from "./db.js"
 import { applySourceFile, syncSource, syncWatchedSources } from "./sync.js"
-import { generateAiWriting, type AiSettings, type AiWritingAction } from "./ai.js"
+import {
+  assertSafeBaseUrl,
+  generateAiWriting,
+  type AiSettings,
+  type AiWritingAction,
+} from "./ai.js"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const uploadDir = path.join(root, "uploads")
@@ -735,6 +740,7 @@ app.get("/api/monthly", (_req, res) =>
 
 async function generateAiSummary(ai: AiSettings, raw: unknown) {
   if (!ai.apiKey || !ai.baseUrl || !ai.model) throw new Error("Konfigurasi AI belum lengkap.")
+  assertSafeBaseUrl(ai.baseUrl)
   const system =
     "Ringkas laporan aktivitas berikut dalam Bahasa Indonesia profesional. Tulis satu paragraf eksekutif, faktual, tanpa mengarang."
   const input = `${system}\n\n${JSON.stringify(raw)}`

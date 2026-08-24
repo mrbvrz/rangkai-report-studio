@@ -154,3 +154,39 @@ describe("generateAiWriting", () => {
     expect(body.input).toContain("Isi asli")
   })
 })
+
+describe("assertSafeBaseUrl (SSRF guard)", () => {
+  it.each([
+    ["http://api.openai.com/v1", "https"],
+    ["https://localhost/v1", "internal"],
+    ["https://metadata.internal/v1", "internal"],
+    ["https://my-service.local/v1", "internal"],
+    ["https://127.0.0.1/v1", "privat"],
+    ["https://10.1.2.3/v1", "privat"],
+    ["https://192.168.1.10/v1", "privat"],
+    ["https://172.16.0.5/v1", "privat"],
+    ["https://169.254.169.254/latest", "privat"],
+    ["https://[::1]/v1", "privat"],
+    ["https://[fd00::5]/v1", "privat"],
+    ["https://[::ffff:10.0.0.5]/v1", "privat"],
+  ])("rejects %s", async (url) => {
+    // Hermetik: fetch sengaja dipasang gagal keras — satu-satunya rejection
+    // yang sah berasal dari guard, bukan jaringan.
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("jaringan tidak boleh dijangkau")))
+    await expect(
+      generateAiWriting({ ...baseConfig, baseUrl: url }, "konten", "improve"),
+    ).rejects.toThrow(/wajib menggunakan https|tidak valid|internal|privat/)
+  })
+
+  it.each([
+    "https://api.openai.com/v1",
+    "https://generativelanguage.googleapis.com/v1beta",
+    "https://my-gateway.example.com/v1",
+    "https://172.32.0.1/v1",
+  ])("allows public https target %s", async (url) => {
+    vi.stubGlobal("fetch", stubFetchResponse({ output_text: "ok" }))
+    await expect(
+      generateAiWriting({ ...baseConfig, baseUrl: url }, "konten", "improve"),
+    ).resolves.toBe("ok")
+  })
+})
