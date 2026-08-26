@@ -10,7 +10,13 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       devOptions: { enabled: true, type: "module" },
-      includeAssets: ["icon-192.svg", "icon-512.svg"],
+      includeAssets: [
+        "icon.svg",
+        "icon-192.png",
+        "icon-512.png",
+        "apple-touch-icon.png",
+        "favicon.png",
+      ],
       manifest: {
         name: "Rangkai Report Studio",
         short_name: "Rangkai",
@@ -22,16 +28,28 @@ export default defineConfig({
         scope: "/",
         icons: [
           {
-            src: "/icon-192.svg",
+            src: "/icon-192.png",
             sizes: "192x192",
-            type: "image/svg+xml",
-            purpose: "any maskable",
+            type: "image/png",
+            purpose: "any",
           },
           {
-            src: "/icon-512.svg",
+            src: "/icon-512.png",
             sizes: "512x512",
+            type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/icon-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
+          },
+          {
+            src: "/icon.svg",
+            sizes: "any",
             type: "image/svg+xml",
-            purpose: "any maskable",
+            purpose: "any",
           },
         ],
       },
