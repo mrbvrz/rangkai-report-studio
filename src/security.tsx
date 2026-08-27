@@ -571,7 +571,7 @@ function UnlockOverlay({
           )}
           {!setup && !recoveryCode && (
             <button
-              className="w-full text-center text-[8px] font-medium text-[#7d8b77] transition hover:text-[#526b47]"
+              className="w-full py-1 text-center text-[11px] font-medium leading-none text-[#7d8b77] transition hover:text-[#526b47]"
               onClick={() => {
                 setRecovery(!recovery)
                 setError("")

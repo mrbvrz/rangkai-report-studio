@@ -53,14 +53,20 @@ export const Card = styled(motion.div)`
 
 export const Input = styled.input`
   width: 100%;
-  height: 44px;
-  padding: 0 13px;
-  border-radius: 11px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
   border: 1px solid #dfe2da;
   background: #fff;
   color: #20231f;
+  font-size: 13px;
+  line-height: 1;
   outline: none;
   transition: 0.18s;
+  &::placeholder {
+    color: #8a9188;
+    font-size: 13px;
+  }
   &:focus {
     border-color: #809970;
     box-shadow: 0 0 0 3px #edf5e8;
