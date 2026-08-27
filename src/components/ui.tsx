@@ -153,7 +153,7 @@ function CalendarPicker({
         type="button"
         disabled={disabled}
         onClick={() => setOpen(!open)}
-        className="flex h-11 w-full items-center justify-between rounded-[11px] border border-[#dfe2da] bg-white px-3 text-left text-[13px] text-[#20231f] outline-none transition hover:border-[#b9c9b0] focus:border-[#809970] focus:ring-4 focus:ring-[#edf5e8] disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-10 w-full items-center justify-between rounded-[10px] border border-[#dfe2da] bg-white px-3 text-left text-[13px] leading-none text-[#20231f] outline-none transition hover:border-[#b9c9b0] focus:border-[#809970] focus:ring-[3px] focus:ring-[#edf5e8] disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span className={value ? "" : "text-[#8a9188]"}>{display}</span>
         <CalendarDays size={17} className="text-[#75836f]" />
@@ -234,14 +234,20 @@ export function MonthPicker(props: PickerProps) {
 }
 export const Textarea = styled.textarea`
   width: 100%;
-  padding: 13px;
-  border-radius: 11px;
+  padding: 12px;
+  border-radius: 10px;
   border: 1px solid #dfe2da;
   background: #fff;
   color: #20231f;
+  font-size: 13px;
+  line-height: 1.5;
   outline: none;
   resize: vertical;
   transition: 0.18s;
+  &::placeholder {
+    color: #8a9188;
+    font-size: 13px;
+  }
   &:focus {
     border-color: #809970;
     box-shadow: 0 0 0 3px #edf5e8;
@@ -293,7 +299,7 @@ export function Select({
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className={`flex w-full items-center justify-between rounded-[11px] border border-[#dfe2da] bg-white px-3 text-left outline-none transition hover:border-[#b9c9b0] focus:border-[#809970] focus:ring-4 focus:ring-[#edf5e8] ${compact ? "h-9 text-[11px]" : "h-11 text-[13px]"}`}
+        className={`flex w-full items-center justify-between rounded-[10px] border border-[#dfe2da] bg-white px-3 text-left outline-none transition hover:border-[#b9c9b0] focus:border-[#809970] focus:ring-[3px] focus:ring-[#edf5e8] ${compact ? "h-9 text-[11px] leading-none" : "h-10 text-[13px] leading-none"}`}
       >
         <span className="truncate">{current?.label || "Pilih opsi"}</span>
         <ChevronDown size={compact ? 14 : 16} className="shrink-0 text-[#818a7c]" />
@@ -333,7 +339,7 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 flex justify-between text-[13px] font-medium text-[#383d36]">
+      <span className="mb-1.5 flex justify-between text-[13px] font-medium leading-none text-[#383d36]">
         {label}
         {hint && <small className="font-normal text-[#858b82]">{hint}</small>}
       </span>

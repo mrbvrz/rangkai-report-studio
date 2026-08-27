@@ -46,7 +46,7 @@ function PaginationNumbers({
     <div className="flex items-center gap-1">
       {items.map((item, index) =>
         item === "ellipsis" ? (
-          <span key={`ellipsis-${index}`} className="px-1 text-[8px] text-[#8a9188]">
+          <span key={`ellipsis-${index}`} className="px-1 text-[11px] leading-none text-[#8a9188]">
             …
           </span>
         ) : (
@@ -55,7 +55,7 @@ function PaginationNumbers({
             key={item}
             onClick={() => onChange(item)}
             aria-current={item === currentPage ? "page" : undefined}
-            className={`grid h-9 min-w-9 place-items-center rounded-lg px-2 text-[8px] font-medium transition ${item === currentPage ? "bg-[#e8f3de] text-[#49633f]" : "text-[#737b70] hover:bg-[#eef1eb]"}`}
+            className={`grid h-9 min-w-9 place-items-center rounded-lg px-2 text-[11px] font-medium leading-none transition ${item === currentPage ? "bg-[#e8f3de] text-[#49633f]" : "text-[#737b70] hover:bg-[#eef1eb]"}`}
           >
             {item}
           </button>
