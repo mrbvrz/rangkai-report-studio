@@ -151,23 +151,23 @@ export function InstallPWA() {
             </button>
             <button
               onClick={handleDismiss}
-              className="w-full rounded-full px-5 py-2.5 text-sm font-medium text-[#6d736a] hover:bg-[#f0f1ec] hover:text-[#30352f]"
+              className="w-full rounded-full px-5 py-2 text-[13px] font-medium leading-none text-[#6d736a] hover:bg-[#f0f1ec] hover:text-[#30352f]"
             >
               Nanti saja
             </button>
           </div>
 
-          <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 text-[12px] text-[#6d736a]">
+          <label className="mt-3 flex cursor-pointer items-center justify-center gap-1.5 text-[11px] leading-none text-[#6d736a]">
             <input
               type="checkbox"
               checked={dontShowChecked}
               onChange={(e) => setDontShowChecked(e.target.checked)}
-              className="h-4 w-4 rounded border-[#d3d8d0] bg-white text-[#6c8f58] focus:ring-[#6c8f58]"
+              className="h-3 w-3 rounded-[3px] border-[#d3d8d0] bg-white text-[#6c8f58] focus:ring-1 focus:ring-[#6c8f58]"
             />
             Jangan tampilkan lagi
           </label>
 
-          <p className="mt-2 text-center text-[11px] text-[#a1a7a0]">
+          <p className="mt-2 text-center text-[10px] leading-none text-[#a1a7a0]">
             Bisa dihapus kapan saja dari home screen
           </p>
         </motion.div>
