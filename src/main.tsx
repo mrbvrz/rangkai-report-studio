@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React from "react"
 import ReactDOM from "react-dom/client"
 import Lenis from "lenis"
@@ -9,12 +10,22 @@ import {
   RouterProvider,
 } from "@tanstack/react-router"
 import { Layout } from "./components/Layout"
-import { InstallPWA } from "./components/InstallPWA"
 import "./styles.css"
 import { SecurityProvider } from "./security"
 import { registerSW } from "virtual:pwa-register"
 
 registerSW({ immediate: true })
+
+// stash prompt globally — Dashboard modal mounts late (lazy route) so must capture early
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeinstallprompt", (e: Event) => {
+    e.preventDefault()
+    ;(window as unknown as Record<string, unknown>).__rangkaiDeferredPrompt = e
+  })
+  window.addEventListener("appinstalled", () => {
+    ;(window as unknown as Record<string, unknown>).__rangkaiDeferredPrompt = undefined
+  })
+}
 
 function SmoothScroll({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
@@ -103,7 +114,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <SecurityProvider>
         <RouterProvider router={router} />
       </SecurityProvider>
-      <InstallPWA />
     </SmoothScroll>
   </React.StrictMode>,
 )

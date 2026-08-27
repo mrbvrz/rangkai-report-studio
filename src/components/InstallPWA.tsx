@@ -2,6 +2,8 @@ import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Sparkles, X } from "./heroicons"
 
+const STORAGE_KEY = "rangkai:pwa:dont-show"
+
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>
@@ -11,19 +13,51 @@ export function InstallPWA() {
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null)
   const [dismissed, setDismissed] = useState(false)
   const [visible, setVisible] = useState(false)
+  const [dontShowChecked, setDontShowChecked] = useState(false)
 
   const isStandalone =
     typeof window !== "undefined" &&
     (window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone === true)
 
+  const isPermanentlyDismissed = (() => {
+    try {
+      return typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY) === "1"
+    } catch {
+      return false
+    }
+  })()
+
+  const persistIfChecked = () => {
+    if (dontShowChecked) {
+      try {
+        localStorage.setItem(STORAGE_KEY, "1")
+      } catch {
+        // ignore storage errors (private mode)
+      }
+    }
+  }
+
+  const handleDismiss = () => {
+    persistIfChecked()
+    setDismissed(true)
+  }
+
   useEffect(() => {
-    if (isStandalone) return
+    if (isStandalone || isPermanentlyDismissed) return
+    // pick up stashed event if Dashboard mounted after prompt fired
+    const stashed = (window as unknown as Record<string, unknown>).__rangkaiDeferredPrompt as
+      BeforeInstallPromptEvent | undefined
+    if (stashed) setPromptEvent(stashed)
+
     const onBeforeInstall = (e: Event) => {
       e.preventDefault()
-      setPromptEvent(e as BeforeInstallPromptEvent)
+      const ev = e as BeforeInstallPromptEvent
+      ;(window as unknown as Record<string, unknown>).__rangkaiDeferredPrompt = ev
+      setPromptEvent(ev)
     }
     const onInstalled = () => {
+      ;(window as unknown as Record<string, unknown>).__rangkaiDeferredPrompt = undefined
       setPromptEvent(null)
       setVisible(false)
     }
@@ -33,17 +67,18 @@ export function InstallPWA() {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall as EventListener)
       window.removeEventListener("appinstalled", onInstalled)
     }
-  }, [isStandalone])
+  }, [isStandalone, isPermanentlyDismissed])
 
   useEffect(() => {
-    if (!promptEvent || dismissed || isStandalone) return
-    const t = setTimeout(() => setVisible(true), 1200)
+    if (!promptEvent || dismissed || isStandalone || isPermanentlyDismissed) return
+    const t = setTimeout(() => setVisible(true), 5000)
     return () => clearTimeout(t)
-  }, [promptEvent, dismissed, isStandalone])
+  }, [promptEvent, dismissed, isStandalone, isPermanentlyDismissed])
 
-  if (isStandalone || !promptEvent || dismissed || !visible) return null
+  if (isStandalone || isPermanentlyDismissed || !promptEvent || dismissed || !visible) return null
 
   const handleInstall = async () => {
+    persistIfChecked()
     await promptEvent.prompt()
     const { outcome } = await promptEvent.userChoice
     if (outcome === "accepted") {
@@ -61,7 +96,7 @@ export function InstallPWA() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[110] grid place-items-center bg-[#1a2216]/40 backdrop-blur-sm p-4"
-        onClick={() => setDismissed(true)}
+        onClick={handleDismiss}
       >
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.96 }}
@@ -73,7 +108,7 @@ export function InstallPWA() {
         >
           <button
             aria-label="Tutup"
-            onClick={() => setDismissed(true)}
+            onClick={handleDismiss}
             className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full text-[#8a9087] hover:bg-[#f0f1ec] hover:text-[#30352f]"
           >
             <X size={16} />
@@ -115,13 +150,24 @@ export function InstallPWA() {
               Install Aplikasi
             </button>
             <button
-              onClick={() => setDismissed(true)}
+              onClick={handleDismiss}
               className="w-full rounded-full px-5 py-2.5 text-sm font-medium text-[#6d736a] hover:bg-[#f0f1ec] hover:text-[#30352f]"
             >
               Nanti saja
             </button>
           </div>
-          <p className="mt-3 text-center text-[11px] text-[#a1a7a0]">
+
+          <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 text-[12px] text-[#6d736a]">
+            <input
+              type="checkbox"
+              checked={dontShowChecked}
+              onChange={(e) => setDontShowChecked(e.target.checked)}
+              className="h-4 w-4 rounded border-[#d3d8d0] bg-white text-[#6c8f58] focus:ring-[#6c8f58]"
+            />
+            Jangan tampilkan lagi
+          </label>
+
+          <p className="mt-2 text-center text-[11px] text-[#a1a7a0]">
             Bisa dihapus kapan saja dari home screen
           </p>
         </motion.div>

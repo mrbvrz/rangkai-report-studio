@@ -11,6 +11,7 @@ import {
 import { useEffect, useState } from "react"
 import { api, displayDate } from "../api"
 import { Button, Card } from "../components/ui/index"
+import { InstallPWA } from "../components/InstallPWA"
 import {
   AreaChart,
   ContributionChart,
@@ -82,6 +83,7 @@ export function Dashboard() {
   ]
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+      <InstallPWA />
       <section className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
           <p className="mb-2 text-xs font-medium uppercase tracking-[.16em] text-[#789168]">
