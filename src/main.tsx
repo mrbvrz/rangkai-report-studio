@@ -9,6 +9,7 @@ import {
   RouterProvider,
 } from "@tanstack/react-router"
 import { Layout } from "./components/Layout"
+import { InstallPWA } from "./components/InstallPWA"
 import "./styles.css"
 import { SecurityProvider } from "./security"
 import { registerSW } from "virtual:pwa-register"
@@ -102,6 +103,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
       <SecurityProvider>
         <RouterProvider router={router} />
       </SecurityProvider>
+      <InstallPWA />
     </SmoothScroll>
   </React.StrictMode>,
 )

@@ -15,7 +15,6 @@ import {
 import { useEffect, useState } from "react"
 import { useSecurity } from "../security"
 import { Button } from "./ui/index"
-import { InstallPWA } from "./InstallPWA"
 
 const links = [
   { to: "/", label: "Ringkasan", icon: BarChart3 },
@@ -177,7 +176,6 @@ export function Layout() {
                 <span className="hidden sm:inline">Kunci</span>
               </Button>
             )}
-            <InstallPWA />
           </div>
         </motion.header>
         <div className="mx-auto mt-0 max-w-[1200px] rounded-b-[27px] bg-[#f7f7f3] p-4 lg:py-6 lg:pl-4 lg:pr-6">
