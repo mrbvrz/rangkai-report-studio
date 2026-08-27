@@ -38,6 +38,7 @@ import {
   SparklesIcon,
   Squares2X2Icon,
   TrashIcon,
+  UserCircleIcon,
   XCircleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline"
@@ -85,6 +86,7 @@ export const ShieldCheck = wrap(ShieldCheckIcon)
 export const Sparkles = wrap(SparklesIcon)
 export const Squares2X2 = wrap(Squares2X2Icon)
 export const Trash = wrap(TrashIcon)
+export const User = wrap(UserCircleIcon)
 export const XCircle = wrap(XCircleIcon)
 export const XMark = wrap(XMarkIcon)
 

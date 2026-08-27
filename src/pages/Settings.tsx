@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Sparkles,
   Trash2,
+  User,
 } from "../components/heroicons"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../api"
@@ -23,7 +24,7 @@ type AiConfig = {
   model: string
   baseUrl?: string
 }
-type Tab = "ai" | "security" | "data"
+type Tab = "profile" | "ai" | "security" | "pin" | "data"
 const providers = [
   {
     id: "openai" as const,
@@ -94,6 +95,12 @@ export function Settings() {
   }
   const tabs = [
     {
+      id: "profile" as const,
+      label: "Profil",
+      detail: "Foto, nama & email",
+      icon: User,
+    },
+    {
       id: "ai" as const,
       label: "AI",
       detail: "Provider & API key",
@@ -104,6 +111,12 @@ export function Settings() {
       label: "Keamanan",
       detail: "Passphrase & enkripsi",
       icon: ShieldCheck,
+    },
+    {
+      id: "pin" as const,
+      label: "PIN",
+      detail: "Kunci cepat 4-6 digit",
+      icon: KeyRound,
     },
     {
       id: "data" as const,
@@ -157,7 +170,9 @@ export function Settings() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
             >
-              {tab === "ai" ? (
+              {tab === "profile" ? (
+                <ProfilePanel />
+              ) : tab === "ai" ? (
                 <AiPanel
                   active={active}
                   provider={provider}
@@ -174,6 +189,8 @@ export function Settings() {
                 />
               ) : tab === "security" ? (
                 <SecurityPanel />
+              ) : tab === "pin" ? (
+                <PinPanel />
               ) : (
                 <DataPanel />
               )}
@@ -530,6 +547,312 @@ function SecurityPanel() {
           <Button className="mt-4" $variant="secondary" onClick={downloadCode}>
             <Download size={15} /> Download recovery code
           </Button>
+        </Card>
+      )}
+    </div>
+  )
+}
+
+function ProfilePanel() {
+  const security = useSecurity()
+  const [name, setName] = useState(security.profile.name)
+  const [email, setEmail] = useState(security.profile.email)
+  const [photo, setPhoto] = useState(security.profile.photo)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState("")
+  const fileRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    setName(security.profile.name)
+    setEmail(security.profile.email)
+    setPhoto(security.profile.photo)
+  }, [security.profile])
+  const onPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 600_000) return setError("Foto maksimal 600KB.")
+    const reader = new FileReader()
+    reader.onload = () => setPhoto(String(reader.result || ""))
+    reader.readAsDataURL(file)
+  }
+  const save = async () => {
+    setError("")
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
+      return setError("Format email tidak valid.")
+    setSaving(true)
+    try {
+      await security.updateProfile({ name: name.trim(), email: email.trim(), photo })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menyimpan profil.")
+    } finally {
+      setSaving(false)
+    }
+  }
+  return (
+    <div className="max-w-3xl space-y-5">
+      <div>
+        <h2 className="font-display font-medium">Profil</h2>
+        <p className="mt-1 text-xs text-[#858b82]">
+          Foto dan identitas untuk avatar di modal kunci.
+        </p>
+      </div>
+      <Card className="p-6">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+          <div className="flex flex-col items-center gap-3">
+            <div className="grid h-24 w-24 place-items-center overflow-hidden rounded-2xl border border-[#e5e7e0] bg-[#eef5e9] text-[#5a7a4a]">
+              {photo ? (
+                <img src={photo} alt="Avatar" className="h-full w-full object-cover" />
+              ) : (
+                <User size={32} />
+              )}
+            </div>
+            <Button $variant="secondary" onClick={() => fileRef.current?.click()}>
+              <FileUp size={14} /> Ganti foto
+            </Button>
+            <input ref={fileRef} hidden type="file" accept="image/*" onChange={onPhoto} />
+            {photo && (
+              <button
+                onClick={() => setPhoto("")}
+                className="text-[11px] text-[#8a9188] hover:text-[#5a6b56]"
+              >
+                Hapus foto
+              </button>
+            )}
+          </div>
+          <div className="flex-1 space-y-4">
+            <Field label="Nama">
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Nama lengkap"
+              />
+            </Field>
+            <Field label="Email">
+              <Input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="email@contoh.com"
+              />
+            </Field>
+            {error && (
+              <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>
+            )}
+            <Button onClick={() => void save()} disabled={saving}>
+              {saved ? <Check size={16} /> : <Save size={16} />}{" "}
+              {saving ? "Menyimpan…" : saved ? "Tersimpan" : "Simpan profil"}
+            </Button>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
+function PinPanel() {
+  const security = useSecurity()
+  const [passphrase, setPassphrase] = useState("")
+  const [pin, setPin] = useState("")
+  const [confirm, setConfirm] = useState("")
+  const [currentPin, setCurrentPin] = useState("")
+  const [newPin, setNewPin] = useState("")
+  const [newConfirm, setNewConfirm] = useState("")
+  const [removePass, setRemovePass] = useState("")
+  const [error, setError] = useState("")
+  const [busy, setBusy] = useState(false)
+  const [mode, setMode] = useState<"change" | "remove">("change")
+  if (!security.enabled) {
+    return (
+      <Card className="p-6">
+        <p className="text-sm text-[#747a71]">Aktifkan passphrase dulu untuk mengatur PIN.</p>
+        <p className="mt-2 text-xs text-[#858b82]">Buka tab Keamanan untuk membuat passphrase.</p>
+      </Card>
+    )
+  }
+  const handleCreatePin = async () => {
+    const pinIssue =
+      pin && pin === confirm ? "" : pin !== confirm ? "Konfirmasi PIN tidak sama." : ""
+    if (pinIssue) return setError(pinIssue)
+    setBusy(true)
+    setError("")
+    try {
+      await security.setPin(passphrase, pin)
+      setPassphrase("")
+      setPin("")
+      setConfirm("")
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal mengatur PIN.")
+    } finally {
+      setBusy(false)
+    }
+  }
+  const change = async () => {
+    if (newPin !== newConfirm) return setError("Konfirmasi PIN baru tidak sama.")
+    setBusy(true)
+    setError("")
+    try {
+      await security.changePin(currentPin, newPin)
+      setCurrentPin("")
+      setNewPin("")
+      setNewConfirm("")
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal mengubah PIN.")
+    } finally {
+      setBusy(false)
+    }
+  }
+  const remove = async () => {
+    setBusy(true)
+    setError("")
+    try {
+      await security.removePin(removePass)
+      setRemovePass("")
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menghapus PIN.")
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="max-w-3xl space-y-5">
+      <div>
+        <h2 className="font-display font-medium">PIN</h2>
+        <p className="mt-1 text-xs text-[#858b82]">
+          Kunci cepat 4-6 digit. Jika aktif, PIN jadi default saat membuka workspace.
+        </p>
+      </div>
+      {!security.pinEnabled ? (
+        <Card className="p-6 space-y-4">
+          <Field label="Passphrase saat ini">
+            <Input
+              type="password"
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+              placeholder="Passphrase"
+            />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="PIN baru (4-6 digit)">
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                placeholder="••••"
+              />
+            </Field>
+            <Field label="Konfirmasi PIN">
+              <Input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value.replace(/\D/g, ""))}
+                placeholder="••••"
+              />
+            </Field>
+          </div>
+          {error && (
+            <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>
+          )}
+          <Button
+            onClick={() => void handleCreatePin()}
+            disabled={busy || !passphrase || pin.length < 4 || !confirm}
+          >
+            <KeyRound size={16} /> {busy ? "Menyimpan…" : "Aktifkan PIN"}
+          </Button>
+        </Card>
+      ) : (
+        <Card className="p-6 space-y-5">
+          <div className="flex items-center gap-2 text-sm font-medium text-[#5a7a4a]">
+            <ShieldCheck size={16} /> PIN aktif — default saat membuka workspace
+          </div>
+          <p className="text-xs leading-5 text-[#7d837a]">
+            Di modal terkunci, PIN akan tampil pertama. Tetap bisa masuk dengan passphrase via link
+            di bawahnya.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              $variant={mode === "change" ? "primary" : "secondary"}
+              onClick={() => setMode("change")}
+            >
+              Ganti PIN
+            </Button>
+            <Button
+              $variant={mode === "remove" ? "primary" : "secondary"}
+              onClick={() => setMode("remove")}
+            >
+              Hapus PIN
+            </Button>
+          </div>
+          {mode === "change" ? (
+            <div className="space-y-3">
+              <Field label="PIN saat ini">
+                <Input
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={currentPin}
+                  onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ""))}
+                  placeholder="••••"
+                />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="PIN baru">
+                  <Input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={newPin}
+                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))}
+                    placeholder="••••"
+                  />
+                </Field>
+                <Field label="Konfirmasi PIN baru">
+                  <Input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={newConfirm}
+                    onChange={(e) => setNewConfirm(e.target.value.replace(/\D/g, ""))}
+                    placeholder="••••"
+                  />
+                </Field>
+              </div>
+              {error && (
+                <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>
+              )}
+              <Button
+                onClick={() => void change()}
+                disabled={busy || !currentPin || newPin.length < 4 || !newConfirm}
+              >
+                <Save size={15} /> {busy ? "Menyimpan…" : "Simpan PIN baru"}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Field label="Passphrase untuk verifikasi">
+                <Input
+                  type="password"
+                  value={removePass}
+                  onChange={(e) => setRemovePass(e.target.value)}
+                  placeholder="Passphrase"
+                />
+              </Field>
+              {error && (
+                <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>
+              )}
+              <Button
+                $variant="danger"
+                onClick={() => void remove()}
+                disabled={busy || !removePass}
+              >
+                <Trash2 size={15} /> {busy ? "Menghapus…" : "Hapus PIN"}
+              </Button>
+            </div>
+          )}
         </Card>
       )}
     </div>

@@ -25,7 +25,9 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const uploadDir = path.join(root, "uploads")
+const dataDir = path.join(root, "data")
 fs.mkdirSync(uploadDir, { recursive: true })
+fs.mkdirSync(dataDir, { recursive: true })
 const app = express()
 app.use(express.json({ limit: "8mb" }))
 
@@ -47,9 +49,158 @@ app.post("/api/database/lock", (_req, res) => {
   lockDatabase()
   res.json({ ok: true, status: databaseStatus() })
 })
+
+// --- PIN & Profile (accessible even when locked for avatar & PIN unlock) ---
+const pinPath = path.join(dataDir, "pin.json")
+const profilePath = path.join(dataDir, "profile.json")
+
+function readPin() {
+  try {
+    if (!fs.existsSync(pinPath)) return null
+    return JSON.parse(fs.readFileSync(pinPath, "utf8")) as {
+      salt: string
+      iv: string
+      tag: string
+      data: string
+    }
+  } catch {
+    return null
+  }
+}
+function readProfile() {
+  try {
+    if (!fs.existsSync(profilePath)) return { name: "", email: "", photo: "" }
+    return JSON.parse(fs.readFileSync(profilePath, "utf8")) as {
+      name?: string
+      email?: string
+      photo?: string
+    }
+  } catch {
+    return { name: "", email: "", photo: "" }
+  }
+}
+
+app.get("/api/profile", (_req, res) => {
+  res.json(readProfile())
+})
+app.get("/api/pin/status", (_req, res) => {
+  res.json({ enabled: !!readPin() })
+})
+app.post("/api/pin/unlock", (req, res) => {
+  const pin = String(req.body?.pin || "")
+  if (!/^\d{4,6}$/.test(pin)) return res.status(400).json({ message: "PIN harus 4-6 digit angka." })
+  const stored = readPin()
+  if (!stored) return res.status(400).json({ message: "PIN belum diatur." })
+  try {
+    const key = crypto.scryptSync(pin, Buffer.from(stored.salt, "base64"), 32)
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(stored.iv, "base64"))
+    decipher.setAuthTag(Buffer.from(stored.tag, "base64"))
+    const passphrase = Buffer.concat([
+      decipher.update(Buffer.from(stored.data, "base64")),
+      decipher.final(),
+    ]).toString("utf8")
+    unlockDatabase(passphrase)
+    res.json({ ok: true, status: databaseStatus() })
+  } catch {
+    res.status(401).json({ message: "PIN tidak valid." })
+  }
+})
+
 app.use("/api", (req, res, next) => {
   if (databaseStatus() === "unlocked") return next()
   res.status(423).json({ message: "Database terkunci.", code: "DATABASE_LOCKED" })
+})
+
+app.put("/api/profile", (req, res) => {
+  const {
+    name = "",
+    email = "",
+    photo = "",
+  } = req.body as {
+    name?: string
+    email?: string
+    photo?: string
+  }
+  if (typeof photo === "string" && photo.length > 700_000)
+    return res.status(400).json({ message: "Foto terlalu besar. Maksimal ~500KB." })
+  const profile = {
+    name: String(name).slice(0, 80),
+    email: String(email).slice(0, 120),
+    photo: String(photo),
+    updatedAt: new Date().toISOString(),
+  }
+  fs.writeFileSync(profilePath, JSON.stringify(profile))
+  res.json(profile)
+})
+
+app.post("/api/pin/setup", (req, res) => {
+  const { passphrase = "", pin = "" } = req.body as { passphrase?: string; pin?: string }
+  if (!/^\d{4,6}$/.test(String(pin)))
+    return res.status(400).json({ message: "PIN harus 4-6 digit angka." })
+  if (String(passphrase) !== databasePassphrase())
+    return res.status(401).json({ message: "Passphrase tidak valid." })
+  const salt = crypto.randomBytes(16)
+  const iv = crypto.randomBytes(12)
+  const key = crypto.scryptSync(String(pin), salt, 32)
+  const cipher = crypto.createCipheriv("aes-256-gcm", key, iv)
+  const data = Buffer.concat([cipher.update(String(passphrase), "utf8"), cipher.final()])
+  fs.writeFileSync(
+    pinPath,
+    JSON.stringify({
+      salt: salt.toString("base64"),
+      iv: iv.toString("base64"),
+      tag: cipher.getAuthTag().toString("base64"),
+      data: data.toString("base64"),
+    }),
+  )
+  res.json({ ok: true })
+})
+
+app.put("/api/pin/change", (req, res) => {
+  const { currentPin = "", newPin = "" } = req.body as { currentPin?: string; newPin?: string }
+  if (!/^\d{4,6}$/.test(String(newPin)))
+    return res.status(400).json({ message: "PIN baru harus 4-6 digit angka." })
+  const stored = readPin()
+  if (!stored) return res.status(400).json({ message: "PIN belum diatur." })
+  try {
+    const key = crypto.scryptSync(String(currentPin), Buffer.from(stored.salt, "base64"), 32)
+    const decipher = crypto.createDecipheriv("aes-256-gcm", key, Buffer.from(stored.iv, "base64"))
+    decipher.setAuthTag(Buffer.from(stored.tag, "base64"))
+    const passphrase = Buffer.concat([
+      decipher.update(Buffer.from(stored.data, "base64")),
+      decipher.final(),
+    ]).toString("utf8")
+    if (passphrase !== databasePassphrase()) throw new Error()
+    const salt = crypto.randomBytes(16)
+    const iv = crypto.randomBytes(12)
+    const newKey = crypto.scryptSync(String(newPin), salt, 32)
+    const cipher = crypto.createCipheriv("aes-256-gcm", newKey, iv)
+    const data = Buffer.concat([cipher.update(passphrase, "utf8"), cipher.final()])
+    fs.writeFileSync(
+      pinPath,
+      JSON.stringify({
+        salt: salt.toString("base64"),
+        iv: iv.toString("base64"),
+        tag: cipher.getAuthTag().toString("base64"),
+        data: data.toString("base64"),
+      }),
+    )
+    res.json({ ok: true })
+  } catch {
+    res.status(401).json({ message: "PIN saat ini tidak valid." })
+  }
+})
+
+app.delete("/api/pin", (req, res) => {
+  const { passphrase = "" } = req.body as { passphrase?: string }
+  if (String(passphrase) !== databasePassphrase())
+    return res.status(401).json({ message: "Passphrase tidak valid." })
+  try {
+    if (fs.existsSync(pinPath)) fs.rmSync(pinPath)
+  } catch {
+    // ignore
+  }
+  res.json({ ok: true })
 })
 
 app.put("/api/database/passphrase", (req, res) => {
@@ -66,6 +217,11 @@ app.put("/api/database/passphrase", (req, res) => {
     )
       return res.status(400).json({ message: "Data passphrase tidak valid." })
     changeDatabasePassphrase(currentPassphrase, nextPassphrase)
+    try {
+      if (fs.existsSync(pinPath)) fs.rmSync(pinPath)
+    } catch {
+      // ignore
+    }
     db.prepare(
       "INSERT INTO app_settings (key, value, updated_at) VALUES ('security', ?, CURRENT_TIMESTAMP) ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP",
     ).run(security)

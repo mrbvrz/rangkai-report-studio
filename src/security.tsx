@@ -13,15 +13,25 @@ type SecurityRecord = {
   encrypted: boolean
   passphrase: WrappedKey
   recovery: WrappedKey
+  pin?: WrappedKey
 }
+export type Profile = { name: string; email: string; photo: string }
 type SecurityContextValue = {
   enabled: boolean
   encrypted: boolean
   locked: boolean
+  pinEnabled: boolean
+  profile: Profile
   createProtection: (passphrase: string, encrypted: boolean) => Promise<string>
   unlock: (passphrase: string) => Promise<string | null>
+  unlockWithPin: (pin: string) => Promise<void>
   recover: (code: string, newPassphrase: string) => Promise<void>
   changePassphrase: (currentPassphrase: string, nextPassphrase: string) => Promise<void>
+  setPin: (passphrase: string, pin: string) => Promise<void>
+  changePin: (currentPin: string, newPin: string) => Promise<void>
+  removePin: (passphrase: string) => Promise<void>
+  updateProfile: (profile: Profile) => Promise<void>
+  refreshProfile: () => Promise<void>
   lock: () => void
   readAiConfig: <T>() => Promise<Partial<T>>
   saveAiConfig: (value: unknown) => Promise<void>
@@ -157,6 +167,10 @@ export function validatePassphrase(value: string) {
   if (!/[^A-Za-z0-9]/.test(value)) return "Tambahkan minimal satu simbol."
   return ""
 }
+export function validatePin(value: string) {
+  if (!/^\d{4,6}$/.test(value)) return "PIN harus 4-6 digit angka."
+  return ""
+}
 
 export function SecurityProvider({ children }: { children: ReactNode }) {
   const initialRoot = getSessionRoot()
@@ -166,8 +180,30 @@ export function SecurityProvider({ children }: { children: ReactNode }) {
   const [isNewDatabase, setIsNewDatabase] = useState<boolean | null>(null)
   const [idleLocked, setIdleLocked] = useState(false)
   const [setupRecoveryCode, setSetupRecoveryCode] = useState("")
+  const [pinEnabled, setPinEnabled] = useState(false)
+  const [profile, setProfile] = useState<Profile>({ name: "", email: "", photo: "" })
   const timer = useRef<number | undefined>(undefined)
   const locked = databaseLocked || Boolean(record && (!rootKey || idleLocked))
+
+  const refreshProfile = async () => {
+    try {
+      const res = await fetch("/api/profile")
+      if (res.ok) setProfile((await res.json()) as Profile)
+    } catch {
+      // ignore
+    }
+  }
+  const refreshPinStatus = async () => {
+    try {
+      const res = await fetch("/api/pin/status")
+      if (res.ok) {
+        const data = (await res.json()) as { enabled: boolean }
+        setPinEnabled(data.enabled)
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   useEffect(() => {
     let active = true
@@ -187,9 +223,12 @@ export function SecurityProvider({ children }: { children: ReactNode }) {
         if (settings.security) {
           const remote = JSON.parse(settings.security) as SecurityRecord
           setRecord(remote)
+          setPinEnabled(!!remote.pin)
         }
       })
       .catch(() => undefined)
+    void refreshProfile()
+    void refreshPinStatus()
     return () => {
       active = false
     }
@@ -267,10 +306,36 @@ export function SecurityProvider({ children }: { children: ReactNode }) {
     const nextRecord = JSON.parse(settings.security) as SecurityRecord
     const root = await unwrapRoot(nextRecord.passphrase, passphrase)
     setRecord(nextRecord)
+    setPinEnabled(!!nextRecord.pin)
     setRootKey(root)
     setIdleLocked(false)
     rememberSession(root)
+    await refreshProfile()
     return null
+  }
+
+  async function unlockWithPin(pin: string) {
+    const issue = validatePin(pin)
+    if (issue) throw new Error(issue)
+    const response = await fetch("/api/pin/unlock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin }),
+    })
+    if (!response.ok)
+      throw new Error((await response.json().catch(() => null))?.message || "PIN tidak valid.")
+    setDatabaseLocked(false)
+    const settings = await fetchSecureSettings()
+    if (!settings.security) throw new Error("Data keamanan tidak ditemukan.")
+    const nextRecord = JSON.parse(settings.security) as SecurityRecord
+    if (!nextRecord.pin) throw new Error("PIN belum diatur.")
+    const root = await unwrapRoot(nextRecord.pin, pin)
+    setRecord(nextRecord)
+    setPinEnabled(true)
+    setRootKey(root)
+    setIdleLocked(false)
+    rememberSession(root)
+    await refreshProfile()
   }
 
   async function recover(code: string, newPassphrase: string) {
@@ -279,8 +344,21 @@ export function SecurityProvider({ children }: { children: ReactNode }) {
     if (issue) throw new Error(issue)
     const root = await unwrapRoot(record.recovery, normalizeRecovery(code))
     const next = { ...record, passphrase: await wrapRoot(root, newPassphrase) }
+    // keep pin if exists but re-wrap? For now remove pin on recover
+    delete next.pin
+    try {
+      if (pinEnabled)
+        await fetch("/api/pin", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ passphrase: newPassphrase }),
+        }).catch(() => undefined)
+    } catch {
+      // ignore
+    }
     await saveSecureSetting("security", JSON.stringify(next))
     setRecord(next)
+    setPinEnabled(false)
     setRootKey(root)
     setIdleLocked(false)
     rememberSession(root)
@@ -294,6 +372,7 @@ export function SecurityProvider({ children }: { children: ReactNode }) {
       ...record,
       passphrase: await wrapRoot(rootKey, nextPassphrase),
     }
+    delete next.pin
     const response = await fetch("/api/database/passphrase", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -310,6 +389,76 @@ export function SecurityProvider({ children }: { children: ReactNode }) {
       throw new Error(body?.message || "Passphrase tidak dapat diubah.")
     }
     setRecord(next)
+    setPinEnabled(false)
+  }
+
+  async function setPin(passphrase: string, pin: string) {
+    if (!record || !rootKey) throw new Error("Aplikasi terkunci.")
+    const pinIssue = validatePin(pin)
+    if (pinIssue) throw new Error(pinIssue)
+    // verify passphrase
+    await unwrapRoot(record.passphrase, passphrase)
+    const pinWrapped = await wrapRoot(rootKey, pin)
+    const next = { ...record, pin: pinWrapped }
+    // server: store encrypted DB passphrase
+    const resp = await fetch("/api/pin/setup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passphrase, pin }),
+    })
+    if (!resp.ok)
+      throw new Error((await resp.json().catch(() => null))?.message || "Gagal mengatur PIN.")
+    await saveSecureSetting("security", JSON.stringify(next))
+    setRecord(next)
+    setPinEnabled(true)
+  }
+
+  async function changePin(currentPin: string, newPin: string) {
+    if (!record || !rootKey) throw new Error("Aplikasi terkunci.")
+    const issue = validatePin(newPin)
+    if (issue) throw new Error(issue)
+    // verify current pin
+    if (!record.pin) throw new Error("PIN belum diatur.")
+    await unwrapRoot(record.pin, currentPin)
+    const resp = await fetch("/api/pin/change", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPin, newPin }),
+    })
+    if (!resp.ok)
+      throw new Error((await resp.json().catch(() => null))?.message || "Gagal mengubah PIN.")
+    const newWrapped = await wrapRoot(rootKey, newPin)
+    const next = { ...record, pin: newWrapped }
+    await saveSecureSetting("security", JSON.stringify(next))
+    setRecord(next)
+  }
+
+  async function removePin(passphrase: string) {
+    if (!record || !rootKey) throw new Error("Aplikasi terkunci.")
+    await unwrapRoot(record.passphrase, passphrase)
+    const resp = await fetch("/api/pin", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passphrase }),
+    })
+    if (!resp.ok)
+      throw new Error((await resp.json().catch(() => null))?.message || "Gagal menghapus PIN.")
+    const next = { ...record }
+    delete next.pin
+    await saveSecureSetting("security", JSON.stringify(next))
+    setRecord(next)
+    setPinEnabled(false)
+  }
+
+  async function updateProfile(next: Profile) {
+    const res = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    })
+    if (!res.ok)
+      throw new Error((await res.json().catch(() => null))?.message || "Gagal menyimpan profil.")
+    setProfile(next)
   }
 
   async function readAiConfig<T>() {
@@ -338,10 +487,18 @@ export function SecurityProvider({ children }: { children: ReactNode }) {
     enabled: Boolean(record),
     encrypted: Boolean(record?.encrypted),
     locked,
+    pinEnabled,
+    profile,
     createProtection,
     unlock,
+    unlockWithPin,
     recover,
     changePassphrase,
+    setPin,
+    changePin,
+    removePin,
+    updateProfile,
+    refreshProfile,
     lock,
     readAiConfig,
     saveAiConfig,
@@ -357,6 +514,9 @@ export function SecurityProvider({ children }: { children: ReactNode }) {
             ready={isNewDatabase !== null}
             recoveryCode={setupRecoveryCode}
             onUnlock={unlock}
+            onUnlockWithPin={unlockWithPin}
+            pinEnabled={pinEnabled}
+            profile={profile}
             onRecover={recover}
             onCompleteSetup={() => setSetupRecoveryCode("")}
           />
@@ -403,12 +563,42 @@ function PasswordInput({
   )
 }
 
+function PinInput({
+  value,
+  onChange,
+  autoFocus,
+  onKeyDown,
+}: {
+  value: string
+  onChange: (v: string) => void
+  autoFocus?: boolean
+  onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void
+}) {
+  return (
+    <Input
+      type="password"
+      inputMode="numeric"
+      pattern="\d*"
+      maxLength={6}
+      value={value}
+      onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 6))}
+      placeholder="••••••"
+      autoFocus={autoFocus}
+      onKeyDown={onKeyDown}
+      className="text-center tracking-[0.3em] text-lg"
+    />
+  )
+}
+
 function UnlockOverlay({
   idle: _idle,
   setup,
   ready,
   recoveryCode,
   onUnlock,
+  onUnlockWithPin,
+  pinEnabled,
+  profile,
   onRecover,
   onCompleteSetup,
 }: {
@@ -417,6 +607,9 @@ function UnlockOverlay({
   ready: boolean
   recoveryCode: string
   onUnlock: (value: string) => Promise<string | null>
+  onUnlockWithPin: (pin: string) => Promise<void>
+  pinEnabled: boolean
+  profile: Profile
   onRecover: (code: string, next: string) => Promise<void>
   onCompleteSetup: () => void
 }) {
@@ -426,7 +619,15 @@ function UnlockOverlay({
     [code, setCode] = useState(""),
     [next, setNext] = useState(""),
     [error, setError] = useState(""),
-    [busy, setBusy] = useState(false)
+    [busy, setBusy] = useState(false),
+    [pin, setPin] = useState(""),
+    [mode, setMode] = useState<"pin" | "passphrase">("pin")
+  const hasPin = pinEnabled && !setup && !recoveryCode
+  const showPin = hasPin && mode === "pin" && !recovery
+  useEffect(() => {
+    if (hasPin) setMode("pin")
+    else setMode("passphrase")
+  }, [hasPin])
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = "hidden"
@@ -440,10 +641,15 @@ function UnlockOverlay({
       if (issue) return setError(issue)
       if (passphrase !== confirm) return setError("Konfirmasi passphrase tidak sama.")
     }
+    if (showPin) {
+      const issue = validatePin(pin)
+      if (issue) return setError(issue)
+    }
     setBusy(true)
     setError("")
     try {
       if (recovery) await onRecover(code, next)
+      else if (showPin) await onUnlockWithPin(pin)
       else await onUnlock(passphrase)
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Tidak dapat membuka aplikasi.")
@@ -451,6 +657,13 @@ function UnlockOverlay({
       setBusy(false)
     }
   }
+  const avatar = profile.photo ? (
+    <img
+      src={profile.photo}
+      alt={profile.name || "Avatar"}
+      className="h-full w-full object-cover"
+    />
+  ) : null
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -463,9 +676,15 @@ function UnlockOverlay({
         animate={{ y: 0, scale: 1 }}
         className="w-full max-w-md rounded-[24px] border border-white/50 bg-[#fbfcf9]/95 p-7 shadow-2xl"
       >
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[#e7f0e1] text-[#536d48]">
-          <LockKeyhole size={25} />
+        <div className="mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-[#e7f0e1] text-[#536d48]">
+          {avatar || <LockKeyhole size={25} />}
         </div>
+        {profile.name && !recoveryCode && (
+          <p className="mt-3 text-center text-sm font-medium text-[#3a4435]">{profile.name}</p>
+        )}
+        {profile.email && !recoveryCode && (
+          <p className="text-center text-xs text-[#7d837a]">{profile.email}</p>
+        )}
         <h2 className="font-display mt-5 text-center text-xl font-medium">
           {recovery
             ? "Pulihkan akses"
@@ -473,7 +692,9 @@ function UnlockOverlay({
               ? "Simpan recovery code"
               : setup
                 ? "Buat passphrase workspace"
-                : "Workspace terkunci"}
+                : showPin
+                  ? "Masukkan PIN"
+                  : "Workspace terkunci"}
         </h2>
         <p className="mx-auto mt-2 max-w-xs text-center text-sm leading-6 text-[#777f74]">
           {recoveryCode
@@ -482,7 +703,9 @@ function UnlockOverlay({
               ? "Masukkan recovery code dan buat passphrase baru."
               : setup
                 ? "Amankan data lokal Anda dengan passphrase yang kuat."
-                : "Masukkan passphrase untuk membuka workspace dan melanjutkan aktivitas."}
+                : showPin
+                  ? "Masukkan PIN 4-6 digit untuk membuka workspace."
+                  : "Masukkan passphrase untuk membuka workspace dan melanjutkan aktivitas."}
         </p>
         <div className="mt-6 space-y-3">
           {recoveryCode ? (
@@ -513,15 +736,26 @@ function UnlockOverlay({
             </>
           ) : (
             <>
-              <PasswordInput
-                value={passphrase}
-                onChange={(event) => setPassphrase(event.target.value)}
-                placeholder={setup ? "Passphrase baru" : "Passphrase"}
-                autoFocus
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !setup) void submit()
-                }}
-              />
+              {showPin ? (
+                <PinInput
+                  value={pin}
+                  onChange={setPin}
+                  autoFocus
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") void submit()
+                  }}
+                />
+              ) : (
+                <PasswordInput
+                  value={passphrase}
+                  onChange={(event) => setPassphrase(event.target.value)}
+                  placeholder={setup ? "Passphrase baru" : "Passphrase"}
+                  autoFocus
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !setup) void submit()
+                  }}
+                />
+              )}
               {setup && (
                 <PasswordInput
                   value={confirm}
@@ -546,7 +780,13 @@ function UnlockOverlay({
             <Button
               className="w-full"
               disabled={
-                !ready || busy || (recovery ? !code || !next : !passphrase || (setup && !confirm))
+                !ready ||
+                busy ||
+                (recovery
+                  ? !code || !next
+                  : showPin
+                    ? pin.length < 4
+                    : !passphrase || (setup && !confirm))
               }
               onClick={() => void submit()}
             >
@@ -561,6 +801,10 @@ function UnlockOverlay({
                   <>
                     <KeyRound size={15} /> Reset passphrase
                   </>
+                ) : showPin ? (
+                  <>
+                    <LockKeyhole size={15} /> Buka dengan PIN
+                  </>
                 ) : (
                   <>
                     <LockKeyhole size={15} /> {setup ? "Simpan passphrase" : "Buka aplikasi"}
@@ -569,7 +813,18 @@ function UnlockOverlay({
               </span>
             </Button>
           )}
-          {!setup && !recoveryCode && (
+          {!setup && !recoveryCode && hasPin && (
+            <button
+              className="w-full py-1 text-center text-[11px] font-medium leading-none text-[#7d8b77] transition hover:text-[#526b47]"
+              onClick={() => {
+                setMode(mode === "pin" ? "passphrase" : "pin")
+                setError("")
+              }}
+            >
+              {mode === "pin" ? "Masuk dengan passphrase" : "Masuk dengan PIN"}
+            </button>
+          )}
+          {!setup && !recoveryCode && !hasPin && (
             <button
               className="w-full py-1 text-center text-[11px] font-medium leading-none text-[#7d8b77] transition hover:text-[#526b47]"
               onClick={() => {
@@ -578,6 +833,17 @@ function UnlockOverlay({
               }}
             >
               {recovery ? "Kembali ke passphrase" : "Lupa passphrase? Gunakan recovery code"}
+            </button>
+          )}
+          {hasPin && recovery && (
+            <button
+              className="w-full py-1 text-center text-[11px] font-medium leading-none text-[#7d8b77] transition hover:text-[#526b47]"
+              onClick={() => {
+                setRecovery(false)
+                setError("")
+              }}
+            >
+              Kembali
             </button>
           )}
         </div>
