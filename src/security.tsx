@@ -579,6 +579,7 @@ export function PinInput({
   const hiddenRef = useRef<HTMLInputElement>(null)
   const prevLen = useRef(value.length)
   const [revealIdx, setRevealIdx] = useState<number | null>(null)
+  const [isError, setIsError] = useState(false)
   useEffect(() => {
     if (autoFocus) hiddenRef.current?.focus()
   }, [autoFocus])
@@ -593,6 +594,12 @@ export function PinInput({
     prevLen.current = value.length
     if (value.length === 0) setRevealIdx(null)
   }, [value])
+  useEffect(() => {
+    if (!shakeKey) return
+    setIsError(true)
+    const t = setTimeout(() => setIsError(false), 900)
+    return () => clearTimeout(t)
+  }, [shakeKey])
   const pushDigit = (d: string) => {
     if (value.length < 6) onChange((value + d).slice(0, 6))
   }
@@ -614,7 +621,7 @@ export function PinInput({
           return (
             <div
               key={i}
-              className={`grid aspect-square place-items-center rounded-[14px] border-2 text-center font-semibold leading-none transition-all ${filled ? "border-[#6c8f58] bg-[#eef5e9] text-[#2e4228] shadow-sm" : "border-[#dfe2da] bg-white"}`}
+              className={`grid aspect-square place-items-center rounded-[14px] border-2 text-center font-semibold leading-none transition-all ${isError ? "border-[#e8a09a] bg-[#fff0ed] text-[#a33a2e] shadow-sm" : filled ? "border-[#6c8f58] bg-[#eef5e9] text-[#2e4228] shadow-sm" : "border-[#dfe2da] bg-white"}`}
             >
               {filled ? (
                 <span
