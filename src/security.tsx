@@ -168,7 +168,7 @@ export function validatePassphrase(value: string) {
   return ""
 }
 export function validatePin(value: string) {
-  if (!/^\d{4,6}$/.test(value)) return "PIN harus 4-6 digit angka."
+  if (!/^\d{6}$/.test(value)) return "PIN harus 6 digit angka."
   return ""
 }
 
@@ -563,7 +563,7 @@ function PasswordInput({
   )
 }
 
-function PinInput({
+export function PinInput({
   value,
   onChange,
   autoFocus,
@@ -574,19 +574,71 @@ function PinInput({
   autoFocus?: boolean
   onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void
 }) {
+  const hiddenRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    if (autoFocus) hiddenRef.current?.focus()
+  }, [autoFocus])
+  const pushDigit = (d: string) => {
+    if (value.length < 6) onChange((value + d).slice(0, 6))
+  }
+  const popDigit = () => onChange(value.slice(0, -1))
+  const handleHiddenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(e.target.value.replace(/\D/g, "").slice(0, 6))
+  }
   return (
-    <Input
-      type="password"
-      inputMode="numeric"
-      pattern="\d*"
-      maxLength={6}
-      value={value}
-      onChange={(e) => onChange(e.target.value.replace(/\D/g, "").slice(0, 6))}
-      placeholder="••••••"
-      autoFocus={autoFocus}
-      onKeyDown={onKeyDown}
-      className="text-center tracking-[0.3em] text-lg"
-    />
+    <div className="space-y-4">
+      <div className="flex justify-center gap-2" onClick={() => hiddenRef.current?.focus()}>
+        {Array.from({ length: 6 }, (_, i) => (
+          <div
+            key={i}
+            className={`grid h-11 w-10 place-items-center rounded-[10px] border text-center text-[18px] font-medium transition ${i < value.length ? "border-[#6c8f58] bg-[#eef5e9] text-[#2e4228]" : "border-[#dfe2da] bg-white text-[#8a9188]"}`}
+          >
+            {i < value.length ? "•" : ""}
+          </div>
+        ))}
+      </div>
+      <input
+        ref={hiddenRef}
+        type="password"
+        inputMode="numeric"
+        pattern="\d*"
+        maxLength={6}
+        value={value}
+        onChange={handleHiddenChange}
+        onKeyDown={onKeyDown}
+        className="sr-only"
+        aria-label="PIN 6 digit"
+        autoComplete="off"
+      />
+      <div className="grid grid-cols-3 gap-2">
+        {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
+          <button
+            key={d}
+            type="button"
+            onClick={() => pushDigit(d)}
+            className="grid h-12 place-items-center rounded-xl border border-[#e5e7e0] bg-white text-[18px] font-medium text-[#2e332b] shadow-sm transition hover:bg-[#f0f3ec] active:scale-[0.98]"
+          >
+            {d}
+          </button>
+        ))}
+        <span />
+        <button
+          type="button"
+          onClick={() => pushDigit("0")}
+          className="grid h-12 place-items-center rounded-xl border border-[#e5e7e0] bg-white text-[18px] font-medium text-[#2e332b] shadow-sm transition hover:bg-[#f0f3ec] active:scale-[0.98]"
+        >
+          0
+        </button>
+        <button
+          type="button"
+          onClick={popDigit}
+          aria-label="Hapus"
+          className="grid h-12 place-items-center rounded-xl border border-[#e5e7e0] bg-[#fafbf8] text-[#6d736a] transition hover:bg-[#eef1eb] active:scale-[0.98]"
+        >
+          ⌫
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -785,7 +837,7 @@ function UnlockOverlay({
                 (recovery
                   ? !code || !next
                   : showPin
-                    ? pin.length < 4
+                    ? pin.length < 6
                     : !passphrase || (setup && !confirm))
               }
               onClick={() => void submit()}
@@ -815,7 +867,7 @@ function UnlockOverlay({
           )}
           {!setup && !recoveryCode && hasPin && (
             <button
-              className="w-full py-1 text-center text-[11px] font-medium leading-none text-[#7d8b77] transition hover:text-[#526b47]"
+              className="w-full py-0.5 text-center text-[10px] font-medium leading-none tracking-[.02em] text-[#7d8b77] transition hover:text-[#526b47]"
               onClick={() => {
                 setMode(mode === "pin" ? "passphrase" : "pin")
                 setError("")
@@ -826,7 +878,7 @@ function UnlockOverlay({
           )}
           {!setup && !recoveryCode && !hasPin && (
             <button
-              className="w-full py-1 text-center text-[11px] font-medium leading-none text-[#7d8b77] transition hover:text-[#526b47]"
+              className="w-full py-0.5 text-center text-[10px] font-medium leading-none tracking-[.02em] text-[#7d8b77] transition hover:text-[#526b47]"
               onClick={() => {
                 setRecovery(!recovery)
                 setError("")
@@ -837,7 +889,7 @@ function UnlockOverlay({
           )}
           {hasPin && recovery && (
             <button
-              className="w-full py-1 text-center text-[11px] font-medium leading-none text-[#7d8b77] transition hover:text-[#526b47]"
+              className="w-full py-0.5 text-center text-[10px] font-medium leading-none tracking-[.02em] text-[#7d8b77] transition hover:text-[#526b47]"
               onClick={() => {
                 setRecovery(false)
                 setError("")

@@ -88,7 +88,7 @@ app.get("/api/pin/status", (_req, res) => {
 })
 app.post("/api/pin/unlock", (req, res) => {
   const pin = String(req.body?.pin || "")
-  if (!/^\d{4,6}$/.test(pin)) return res.status(400).json({ message: "PIN harus 4-6 digit angka." })
+  if (!/^\d{6}$/.test(pin)) return res.status(400).json({ message: "PIN harus 6 digit angka." })
   const stored = readPin()
   if (!stored) return res.status(400).json({ message: "PIN belum diatur." })
   try {
@@ -135,8 +135,8 @@ app.put("/api/profile", (req, res) => {
 
 app.post("/api/pin/setup", (req, res) => {
   const { passphrase = "", pin = "" } = req.body as { passphrase?: string; pin?: string }
-  if (!/^\d{4,6}$/.test(String(pin)))
-    return res.status(400).json({ message: "PIN harus 4-6 digit angka." })
+  if (!/^\d{6}$/.test(String(pin)))
+    return res.status(400).json({ message: "PIN harus 6 digit angka." })
   if (String(passphrase) !== databasePassphrase())
     return res.status(401).json({ message: "Passphrase tidak valid." })
   const salt = crypto.randomBytes(16)
@@ -158,8 +158,8 @@ app.post("/api/pin/setup", (req, res) => {
 
 app.put("/api/pin/change", (req, res) => {
   const { currentPin = "", newPin = "" } = req.body as { currentPin?: string; newPin?: string }
-  if (!/^\d{4,6}$/.test(String(newPin)))
-    return res.status(400).json({ message: "PIN baru harus 4-6 digit angka." })
+  if (!/^\d{6}$/.test(String(newPin)))
+    return res.status(400).json({ message: "PIN baru harus 6 digit angka." })
   const stored = readPin()
   if (!stored) return res.status(400).json({ message: "PIN belum diatur." })
   try {

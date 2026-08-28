@@ -186,7 +186,7 @@ function CalendarPicker({
                   type="button"
                   key={item}
                   onClick={() => chooseMonth(item)}
-                  className={`rounded-lg px-2 py-2.5 text-[12px] capitalize transition hover:bg-[#eef5e9] ${value === `${year}-${String(item + 1).padStart(2, "0")}` ? "bg-[#e6f2df] font-medium text-[#4c6843]" : "text-[#596256]"}`}
+                  className={`rounded-lg px-2 py-2.5 text-[13px] capitalize leading-none transition hover:bg-[#eef5e9] ${value === `${year}-${String(item + 1).padStart(2, "0")}` ? "bg-[#e6f2df] font-medium text-[#4c6843]" : "text-[#596256]"}`}
                 >
                   {new Intl.DateTimeFormat("id-ID", { month: "short" }).format(
                     new Date(year, item, 1),
@@ -196,7 +196,7 @@ function CalendarPicker({
             </div>
           ) : (
             <>
-              <div className="mb-2 grid grid-cols-7 text-center text-[10px] font-medium text-[#98a096]">
+              <div className="mb-2 grid grid-cols-7 text-center text-[11px] font-medium leading-none text-[#98a096]">
                 {["Sn", "Se", "Sl", "Rb", "Km", "Jm", "Sb"].map((day) => (
                   <span key={day}>{day}</span>
                 ))}
@@ -212,7 +212,7 @@ function CalendarPicker({
                       type="button"
                       key={key}
                       onClick={() => chooseDate(day)}
-                      className={`grid h-8 place-items-center rounded-lg text-[12px] transition hover:bg-[#eef5e9] ${value === key ? "bg-[#6c8f58] font-medium text-white hover:bg-[#5e7f4c]" : "text-[#596256]"}`}
+                      className={`grid h-9 place-items-center rounded-lg text-[13px] leading-none transition hover:bg-[#eef5e9] ${value === key ? "bg-[#6c8f58] font-medium text-white hover:bg-[#5e7f4c]" : "text-[#596256]"}`}
                     >
                       {day}
                     </button>

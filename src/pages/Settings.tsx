@@ -15,7 +15,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react"
 import { api } from "../api"
 import { Button, Card, Field, Input } from "../components/ui/index"
-import { useSecurity, validatePassphrase } from "../security"
+import { PinInput, useSecurity, validatePassphrase, validatePin } from "../security"
 
 type ProviderId = "openai" | "gemini" | "anthropic" | "openrouter"
 type AiConfig = {
@@ -24,7 +24,7 @@ type AiConfig = {
   model: string
   baseUrl?: string
 }
-type Tab = "profile" | "ai" | "security" | "pin" | "data"
+type Tab = "profile" | "ai" | "security" | "data"
 const providers = [
   {
     id: "openai" as const,
@@ -109,14 +109,8 @@ export function Settings() {
     {
       id: "security" as const,
       label: "Keamanan",
-      detail: "Passphrase & enkripsi",
+      detail: "Passphrase, PIN & enkripsi",
       icon: ShieldCheck,
-    },
-    {
-      id: "pin" as const,
-      label: "PIN",
-      detail: "Kunci cepat 4-6 digit",
-      icon: KeyRound,
     },
     {
       id: "data" as const,
@@ -189,8 +183,6 @@ export function Settings() {
                 />
               ) : tab === "security" ? (
                 <SecurityPanel />
-              ) : tab === "pin" ? (
-                <PinPanel />
               ) : (
                 <DataPanel />
               )}
@@ -368,7 +360,17 @@ function SecurityPanel() {
     [encrypt, setEncrypt] = useState(true),
     [error, setError] = useState(""),
     [recoveryCode, setRecoveryCode] = useState(""),
-    [busy, setBusy] = useState(false)
+    [busy, setBusy] = useState(false),
+    [pinModal, setPinModal] = useState<null | "setup" | "change" | "remove">(null),
+    [pinPass, setPinPass] = useState(""),
+    [pin, setPin] = useState(""),
+    [pinConfirm, setPinConfirm] = useState(""),
+    [pinCurrent, setPinCurrent] = useState(""),
+    [pinNew, setPinNew] = useState(""),
+    [pinNewConfirm, setPinNewConfirm] = useState(""),
+    [pinRemovePass, setPinRemovePass] = useState(""),
+    [pinError, setPinError] = useState(""),
+    [pinBusy, setPinBusy] = useState(false)
   async function enable() {
     const issue = validatePassphrase(passphrase)
     if (issue) return setError(issue)
@@ -400,6 +402,60 @@ function SecurityPanel() {
       setError(reason instanceof Error ? reason.message : "Gagal mengubah passphrase.")
     } finally {
       setBusy(false)
+    }
+  }
+  const resetPinModal = () => {
+    setPinPass("")
+    setPin("")
+    setPinConfirm("")
+    setPinCurrent("")
+    setPinNew("")
+    setPinNewConfirm("")
+    setPinRemovePass("")
+    setPinError("")
+    setPinBusy(false)
+    setPinModal(null)
+  }
+  const handleSetupPin = async () => {
+    if (pin !== pinConfirm) return setPinError("Konfirmasi PIN tidak sama.")
+    const issue = validatePin(pin)
+    if (issue) return setPinError(issue)
+    setPinBusy(true)
+    setPinError("")
+    try {
+      await security.setPin(pinPass, pin)
+      resetPinModal()
+    } catch (e) {
+      setPinError(e instanceof Error ? e.message : "Gagal mengatur PIN.")
+    } finally {
+      setPinBusy(false)
+    }
+  }
+  const handleChangePin = async () => {
+    if (pinNew !== pinNewConfirm) return setPinError("Konfirmasi PIN baru tidak sama.")
+    const issue = validatePin(pinNew)
+    if (issue) return setPinError(issue)
+    setPinBusy(true)
+    setPinError("")
+    try {
+      await security.changePin(pinCurrent, pinNew)
+      resetPinModal()
+    } catch (e) {
+      setPinError(e instanceof Error ? e.message : "Gagal mengubah PIN.")
+    } finally {
+      setPinBusy(false)
+    }
+  }
+  const handleRemovePin = async () => {
+    setPinBusy(true)
+    setPinError("")
+    try {
+      await security.removePin(pinRemovePass)
+      resetPinModal()
+    } catch (e) {
+      setPinError(e instanceof Error ? e.message : "Gagal menghapus PIN.")
+    } finally {
+      setPinBusy(false)
     }
   }
   function downloadCode() {
@@ -532,6 +588,44 @@ function SecurityPanel() {
           </div>
         )}
       </Card>
+      {security.enabled && (
+        <Card className="p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex gap-3">
+              <KeyRound className="text-[#607a53]" />
+              <div>
+                <h3 className="font-display text-sm font-medium">PIN 6 digit</h3>
+                <p className="mt-1 text-xs leading-5 text-[#7d837a]">
+                  {security.pinEnabled
+                    ? "PIN aktif — jadi default saat membuka workspace. Tetap bisa masuk dengan passphrase."
+                    : "Atur PIN cepat 6 angka sebagai alternatif passphrase."}
+                </p>
+              </div>
+            </div>
+            <span
+              className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-medium ${security.pinEnabled ? "bg-[#e6f2df] text-[#4c6843]" : "bg-[#f1f1ed] text-[#8a9188]"}`}
+            >
+              {security.pinEnabled ? "Aktif" : "Belum diatur"}
+            </span>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {!security.pinEnabled ? (
+              <Button onClick={() => setPinModal("setup")}>
+                <KeyRound size={15} /> Atur PIN
+              </Button>
+            ) : (
+              <>
+                <Button $variant="secondary" onClick={() => setPinModal("change")}>
+                  Ganti PIN
+                </Button>
+                <Button $variant="danger" onClick={() => setPinModal("remove")}>
+                  Hapus PIN
+                </Button>
+              </>
+            )}
+          </div>
+        </Card>
+      )}
       {recoveryCode && (
         <Card className="border-[#dccf9f] bg-[#fffdf4] p-6">
           <div className="flex gap-3">
@@ -548,6 +642,127 @@ function SecurityPanel() {
             <Download size={15} /> Download recovery code
           </Button>
         </Card>
+      )}
+      {pinModal && (
+        <div
+          className="fixed inset-0 z-[120] grid place-items-center bg-[#1a2216]/40 p-4 backdrop-blur-sm"
+          onClick={resetPinModal}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[380px] rounded-[24px] border border-[#e5e7e0] bg-white p-6 shadow-[0_20px_60px_rgba(38,50,31,0.18)]"
+          >
+            <h3 className="font-display text-[17px] font-semibold text-[#1d2a18]">
+              {pinModal === "setup"
+                ? "Atur PIN 6 digit"
+                : pinModal === "change"
+                  ? "Ganti PIN"
+                  : "Hapus PIN"}
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-[#7d837a]">
+              {pinModal === "setup"
+                ? "Masukkan passphrase untuk verifikasi, lalu buat PIN 6 angka."
+                : pinModal === "change"
+                  ? "Masukkan PIN lama dan PIN baru 6 angka."
+                  : "Masukkan passphrase untuk menghapus PIN."}
+            </p>
+            <div className="mt-5 space-y-4">
+              {pinModal === "setup" && (
+                <>
+                  <Field label="Passphrase">
+                    <Input
+                      type="password"
+                      value={pinPass}
+                      onChange={(e) => setPinPass(e.target.value)}
+                      placeholder="Passphrase"
+                    />
+                  </Field>
+                  <div>
+                    <p className="mb-2 text-[13px] font-medium text-[#383d36]">PIN baru</p>
+                    <PinInput value={pin} onChange={setPin} />
+                  </div>
+                  <div>
+                    <p className="mb-2 text-[13px] font-medium text-[#383d36]">Konfirmasi PIN</p>
+                    <PinInput value={pinConfirm} onChange={setPinConfirm} />
+                  </div>
+                </>
+              )}
+              {pinModal === "change" && (
+                <>
+                  <div>
+                    <p className="mb-2 text-[13px] font-medium text-[#383d36]">PIN saat ini</p>
+                    <PinInput value={pinCurrent} onChange={setPinCurrent} />
+                  </div>
+                  <div>
+                    <p className="mb-2 text-[13px] font-medium text-[#383d36]">PIN baru</p>
+                    <PinInput value={pinNew} onChange={setPinNew} />
+                  </div>
+                  <div>
+                    <p className="mb-2 text-[13px] font-medium text-[#383d36]">
+                      Konfirmasi PIN baru
+                    </p>
+                    <PinInput value={pinNewConfirm} onChange={setPinNewConfirm} />
+                  </div>
+                </>
+              )}
+              {pinModal === "remove" && (
+                <Field label="Passphrase">
+                  <Input
+                    type="password"
+                    value={pinRemovePass}
+                    onChange={(e) => setPinRemovePass(e.target.value)}
+                    placeholder="Passphrase"
+                  />
+                </Field>
+              )}
+              {pinError && (
+                <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">
+                  {pinError}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <Button $variant="secondary" onClick={resetPinModal} className="flex-1">
+                  Batal
+                </Button>
+                {pinModal === "setup" && (
+                  <Button
+                    onClick={() => void handleSetupPin()}
+                    disabled={pinBusy || !pinPass || pin.length !== 6 || pinConfirm.length !== 6}
+                    className="flex-1"
+                  >
+                    {pinBusy ? "Menyimpan…" : "Simpan PIN"}
+                  </Button>
+                )}
+                {pinModal === "change" && (
+                  <Button
+                    onClick={() => void handleChangePin()}
+                    disabled={
+                      pinBusy ||
+                      pinCurrent.length !== 6 ||
+                      pinNew.length !== 6 ||
+                      pinNewConfirm.length !== 6
+                    }
+                    className="flex-1"
+                  >
+                    {pinBusy ? "Menyimpan…" : "Ganti PIN"}
+                  </Button>
+                )}
+                {pinModal === "remove" && (
+                  <Button
+                    $variant="danger"
+                    onClick={() => void handleRemovePin()}
+                    disabled={pinBusy || !pinRemovePass}
+                    className="flex-1"
+                  >
+                    {pinBusy ? "Menghapus…" : "Hapus PIN"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   )
@@ -646,215 +861,6 @@ function ProfilePanel() {
           </div>
         </div>
       </Card>
-    </div>
-  )
-}
-
-function PinPanel() {
-  const security = useSecurity()
-  const [passphrase, setPassphrase] = useState("")
-  const [pin, setPin] = useState("")
-  const [confirm, setConfirm] = useState("")
-  const [currentPin, setCurrentPin] = useState("")
-  const [newPin, setNewPin] = useState("")
-  const [newConfirm, setNewConfirm] = useState("")
-  const [removePass, setRemovePass] = useState("")
-  const [error, setError] = useState("")
-  const [busy, setBusy] = useState(false)
-  const [mode, setMode] = useState<"change" | "remove">("change")
-  if (!security.enabled) {
-    return (
-      <Card className="p-6">
-        <p className="text-sm text-[#747a71]">Aktifkan passphrase dulu untuk mengatur PIN.</p>
-        <p className="mt-2 text-xs text-[#858b82]">Buka tab Keamanan untuk membuat passphrase.</p>
-      </Card>
-    )
-  }
-  const handleCreatePin = async () => {
-    const pinIssue =
-      pin && pin === confirm ? "" : pin !== confirm ? "Konfirmasi PIN tidak sama." : ""
-    if (pinIssue) return setError(pinIssue)
-    setBusy(true)
-    setError("")
-    try {
-      await security.setPin(passphrase, pin)
-      setPassphrase("")
-      setPin("")
-      setConfirm("")
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal mengatur PIN.")
-    } finally {
-      setBusy(false)
-    }
-  }
-  const change = async () => {
-    if (newPin !== newConfirm) return setError("Konfirmasi PIN baru tidak sama.")
-    setBusy(true)
-    setError("")
-    try {
-      await security.changePin(currentPin, newPin)
-      setCurrentPin("")
-      setNewPin("")
-      setNewConfirm("")
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal mengubah PIN.")
-    } finally {
-      setBusy(false)
-    }
-  }
-  const remove = async () => {
-    setBusy(true)
-    setError("")
-    try {
-      await security.removePin(removePass)
-      setRemovePass("")
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal menghapus PIN.")
-    } finally {
-      setBusy(false)
-    }
-  }
-  return (
-    <div className="max-w-3xl space-y-5">
-      <div>
-        <h2 className="font-display font-medium">PIN</h2>
-        <p className="mt-1 text-xs text-[#858b82]">
-          Kunci cepat 4-6 digit. Jika aktif, PIN jadi default saat membuka workspace.
-        </p>
-      </div>
-      {!security.pinEnabled ? (
-        <Card className="p-6 space-y-4">
-          <Field label="Passphrase saat ini">
-            <Input
-              type="password"
-              value={passphrase}
-              onChange={(e) => setPassphrase(e.target.value)}
-              placeholder="Passphrase"
-            />
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="PIN baru (4-6 digit)">
-              <Input
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                placeholder="••••"
-              />
-            </Field>
-            <Field label="Konfirmasi PIN">
-              <Input
-                type="password"
-                inputMode="numeric"
-                maxLength={6}
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value.replace(/\D/g, ""))}
-                placeholder="••••"
-              />
-            </Field>
-          </div>
-          {error && (
-            <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>
-          )}
-          <Button
-            onClick={() => void handleCreatePin()}
-            disabled={busy || !passphrase || pin.length < 4 || !confirm}
-          >
-            <KeyRound size={16} /> {busy ? "Menyimpan…" : "Aktifkan PIN"}
-          </Button>
-        </Card>
-      ) : (
-        <Card className="p-6 space-y-5">
-          <div className="flex items-center gap-2 text-sm font-medium text-[#5a7a4a]">
-            <ShieldCheck size={16} /> PIN aktif — default saat membuka workspace
-          </div>
-          <p className="text-xs leading-5 text-[#7d837a]">
-            Di modal terkunci, PIN akan tampil pertama. Tetap bisa masuk dengan passphrase via link
-            di bawahnya.
-          </p>
-          <div className="flex gap-2">
-            <Button
-              $variant={mode === "change" ? "primary" : "secondary"}
-              onClick={() => setMode("change")}
-            >
-              Ganti PIN
-            </Button>
-            <Button
-              $variant={mode === "remove" ? "primary" : "secondary"}
-              onClick={() => setMode("remove")}
-            >
-              Hapus PIN
-            </Button>
-          </div>
-          {mode === "change" ? (
-            <div className="space-y-3">
-              <Field label="PIN saat ini">
-                <Input
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={currentPin}
-                  onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, ""))}
-                  placeholder="••••"
-                />
-              </Field>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="PIN baru">
-                  <Input
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={newPin}
-                    onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))}
-                    placeholder="••••"
-                  />
-                </Field>
-                <Field label="Konfirmasi PIN baru">
-                  <Input
-                    type="password"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={newConfirm}
-                    onChange={(e) => setNewConfirm(e.target.value.replace(/\D/g, ""))}
-                    placeholder="••••"
-                  />
-                </Field>
-              </div>
-              {error && (
-                <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>
-              )}
-              <Button
-                onClick={() => void change()}
-                disabled={busy || !currentPin || newPin.length < 4 || !newConfirm}
-              >
-                <Save size={15} /> {busy ? "Menyimpan…" : "Simpan PIN baru"}
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <Field label="Passphrase untuk verifikasi">
-                <Input
-                  type="password"
-                  value={removePass}
-                  onChange={(e) => setRemovePass(e.target.value)}
-                  placeholder="Passphrase"
-                />
-              </Field>
-              {error && (
-                <p className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>
-              )}
-              <Button
-                $variant="danger"
-                onClick={() => void remove()}
-                disabled={busy || !removePass}
-              >
-                <Trash2 size={15} /> {busy ? "Menghapus…" : "Hapus PIN"}
-              </Button>
-            </div>
-          )}
-        </Card>
-      )}
     </div>
   )
 }
