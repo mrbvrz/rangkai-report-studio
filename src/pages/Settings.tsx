@@ -718,12 +718,30 @@ function SecurityPanel() {
                   </Field>
                   <div>
                     <p className="mb-2 text-[13px] font-medium text-[#383d36]">PIN baru</p>
-                    <PinInput value={pin} onChange={setPin} shakeKey={pinShake} />
+                    <PinInput
+                      value={pin}
+                      onChange={(v) => {
+                        setPin(v)
+                        if (v.length < 6) setPinConfirm("")
+                      }}
+                      shakeKey={pinShake}
+                    />
                   </div>
-                  <div>
-                    <p className="mb-2 text-[13px] font-medium text-[#383d36]">Konfirmasi PIN</p>
-                    <PinInput value={pinConfirm} onChange={setPinConfirm} shakeKey={pinShake} />
-                  </div>
+                  {pin.length === 6 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-2"
+                    >
+                      <p className="mb-2 text-[13px] font-medium text-[#383d36]">Konfirmasi PIN</p>
+                      <PinInput
+                        value={pinConfirm}
+                        onChange={setPinConfirm}
+                        shakeKey={pinShake}
+                        autoFocus
+                      />
+                    </motion.div>
+                  )}
                 </>
               )}
               {pinModal === "change" && (
@@ -734,18 +752,28 @@ function SecurityPanel() {
                   </div>
                   <div>
                     <p className="mb-2 text-[13px] font-medium text-[#383d36]">PIN baru</p>
-                    <PinInput value={pinNew} onChange={setPinNew} shakeKey={pinShake} />
-                  </div>
-                  <div>
-                    <p className="mb-2 text-[13px] font-medium text-[#383d36]">
-                      Konfirmasi PIN baru
-                    </p>
                     <PinInput
-                      value={pinNewConfirm}
-                      onChange={setPinNewConfirm}
+                      value={pinNew}
+                      onChange={(v) => {
+                        setPinNew(v)
+                        if (v.length < 6) setPinNewConfirm("")
+                      }}
                       shakeKey={pinShake}
                     />
                   </div>
+                  {pinNew.length === 6 && (
+                    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+                      <p className="mb-2 text-[13px] font-medium text-[#383d36]">
+                        Konfirmasi PIN baru
+                      </p>
+                      <PinInput
+                        value={pinNewConfirm}
+                        onChange={setPinNewConfirm}
+                        shakeKey={pinShake}
+                        autoFocus
+                      />
+                    </motion.div>
+                  )}
                 </>
               )}
               {pinModal === "remove" && (
