@@ -568,11 +568,13 @@ export function PinInput({
   onChange,
   autoFocus,
   onKeyDown,
+  shakeKey,
 }: {
   value: string
   onChange: (v: string) => void
   autoFocus?: boolean
   onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void
+  shakeKey?: number
 }) {
   const hiddenRef = useRef<HTMLInputElement>(null)
   const prevLen = useRef(value.length)
@@ -599,7 +601,12 @@ export function PinInput({
     onChange(e.target.value.replace(/\D/g, "").slice(0, 6))
   }
   return (
-    <div className="mx-auto w-full max-w-[340px] space-y-5">
+    <motion.div
+      key={shakeKey}
+      animate={shakeKey ? { x: [0, -8, 8, -6, 6, 0] } : {}}
+      transition={{ duration: 0.38, ease: "easeInOut" }}
+      className="mx-auto w-full max-w-[340px] space-y-5"
+    >
       <div className="grid grid-cols-6 gap-3" onClick={() => hiddenRef.current?.focus()}>
         {Array.from({ length: 6 }, (_, i) => {
           const filled = i < value.length
@@ -663,7 +670,7 @@ export function PinInput({
           ⌫
         </button>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -698,7 +705,9 @@ function UnlockOverlay({
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [pin, setPin] = useState(""),
-    [mode, setMode] = useState<"pin" | "passphrase">("pin")
+    [mode, setMode] = useState<"pin" | "passphrase">("pin"),
+    [pinShake, setPinShake] = useState(0),
+    [pinToast, setPinToast] = useState("")
   const hasPin = pinEnabled && !setup && !recoveryCode
   const showPin = hasPin && mode === "pin" && !recovery
   useEffect(() => {
@@ -712,6 +721,11 @@ function UnlockOverlay({
       document.body.style.overflow = previousOverflow
     }
   }, [])
+  useEffect(() => {
+    if (!pinToast) return
+    const t = setTimeout(() => setPinToast(""), 2200)
+    return () => clearTimeout(t)
+  }, [pinToast])
   async function submit() {
     if (setup) {
       const issue = validatePassphrase(passphrase)
@@ -720,7 +734,11 @@ function UnlockOverlay({
     }
     if (showPin) {
       const issue = validatePin(pin)
-      if (issue) return setError(issue)
+      if (issue) {
+        setPinShake((k) => k + 1)
+        setPinToast(issue)
+        return
+      }
     }
     setBusy(true)
     setError("")
@@ -729,6 +747,12 @@ function UnlockOverlay({
       else if (showPin) await onUnlockWithPin(pin)
       else await onUnlock(passphrase)
     } catch (reason) {
+      if (showPin) {
+        setPinShake((k) => k + 1)
+        setPinToast("PIN salah, coba lagi")
+        setPin("")
+        return
+      }
       setError(reason instanceof Error ? reason.message : "Tidak dapat membuka aplikasi.")
     } finally {
       setBusy(false)
@@ -748,6 +772,18 @@ function UnlockOverlay({
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] grid place-items-center bg-[#1e241e]/45 p-5 backdrop-blur-xl"
     >
+      <AnimatePresence>
+        {pinToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -8, x: "-50%" }}
+            className="fixed top-6 left-1/2 z-[110] rounded-full bg-[#2e332b] px-4 py-2.5 text-[13px] font-medium text-white shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+          >
+            {pinToast}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <motion.div
         initial={{ y: 14, scale: 0.98 }}
         animate={{ y: 0, scale: 1 }}
@@ -818,6 +854,7 @@ function UnlockOverlay({
                   value={pin}
                   onChange={setPin}
                   autoFocus
+                  shakeKey={pinShake}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") void submit()
                   }}

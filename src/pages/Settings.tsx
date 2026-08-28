@@ -370,7 +370,14 @@ function SecurityPanel() {
     [pinNewConfirm, setPinNewConfirm] = useState(""),
     [pinRemovePass, setPinRemovePass] = useState(""),
     [pinError, setPinError] = useState(""),
-    [pinBusy, setPinBusy] = useState(false)
+    [pinBusy, setPinBusy] = useState(false),
+    [pinShake, setPinShake] = useState(0),
+    [pinToast, setPinToast] = useState("")
+  useEffect(() => {
+    if (!pinToast) return
+    const t = setTimeout(() => setPinToast(""), 2200)
+    return () => clearTimeout(t)
+  }, [pinToast])
   async function enable() {
     const issue = validatePassphrase(passphrase)
     if (issue) return setError(issue)
@@ -417,31 +424,49 @@ function SecurityPanel() {
     setPinModal(null)
   }
   const handleSetupPin = async () => {
-    if (pin !== pinConfirm) return setPinError("Konfirmasi PIN tidak sama.")
+    if (pin !== pinConfirm) {
+      setPinShake((k) => k + 1)
+      setPinToast("Konfirmasi PIN tidak sama.")
+      return
+    }
     const issue = validatePin(pin)
-    if (issue) return setPinError(issue)
+    if (issue) {
+      setPinShake((k) => k + 1)
+      setPinToast(issue)
+      return
+    }
     setPinBusy(true)
     setPinError("")
     try {
       await security.setPin(pinPass, pin)
       resetPinModal()
     } catch (e) {
-      setPinError(e instanceof Error ? e.message : "Gagal mengatur PIN.")
+      setPinShake((k) => k + 1)
+      setPinToast(e instanceof Error ? e.message : "Gagal mengatur PIN.")
     } finally {
       setPinBusy(false)
     }
   }
   const handleChangePin = async () => {
-    if (pinNew !== pinNewConfirm) return setPinError("Konfirmasi PIN baru tidak sama.")
+    if (pinNew !== pinNewConfirm) {
+      setPinShake((k) => k + 1)
+      setPinToast("Konfirmasi PIN baru tidak sama.")
+      return
+    }
     const issue = validatePin(pinNew)
-    if (issue) return setPinError(issue)
+    if (issue) {
+      setPinShake((k) => k + 1)
+      setPinToast(issue)
+      return
+    }
     setPinBusy(true)
     setPinError("")
     try {
       await security.changePin(pinCurrent, pinNew)
       resetPinModal()
     } catch (e) {
-      setPinError(e instanceof Error ? e.message : "Gagal mengubah PIN.")
+      setPinShake((k) => k + 1)
+      setPinToast(e instanceof Error ? e.message : "Gagal mengubah PIN.")
     } finally {
       setPinBusy(false)
     }
@@ -648,6 +673,18 @@ function SecurityPanel() {
           className="fixed inset-0 z-[120] grid place-items-center bg-[#1a2216]/40 p-4 backdrop-blur-sm"
           onClick={resetPinModal}
         >
+          <AnimatePresence>
+            {pinToast && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, x: "-50%" }}
+                animate={{ opacity: 1, y: 0, x: "-50%" }}
+                exit={{ opacity: 0, y: -8, x: "-50%" }}
+                className="fixed top-6 left-1/2 z-[130] rounded-full bg-[#2e332b] px-4 py-2.5 text-[13px] font-medium text-white shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+              >
+                {pinToast}
+              </motion.div>
+            )}
+          </AnimatePresence>
           <motion.div
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -681,11 +718,11 @@ function SecurityPanel() {
                   </Field>
                   <div>
                     <p className="mb-2 text-[13px] font-medium text-[#383d36]">PIN baru</p>
-                    <PinInput value={pin} onChange={setPin} />
+                    <PinInput value={pin} onChange={setPin} shakeKey={pinShake} />
                   </div>
                   <div>
                     <p className="mb-2 text-[13px] font-medium text-[#383d36]">Konfirmasi PIN</p>
-                    <PinInput value={pinConfirm} onChange={setPinConfirm} />
+                    <PinInput value={pinConfirm} onChange={setPinConfirm} shakeKey={pinShake} />
                   </div>
                 </>
               )}
@@ -693,17 +730,21 @@ function SecurityPanel() {
                 <>
                   <div>
                     <p className="mb-2 text-[13px] font-medium text-[#383d36]">PIN saat ini</p>
-                    <PinInput value={pinCurrent} onChange={setPinCurrent} />
+                    <PinInput value={pinCurrent} onChange={setPinCurrent} shakeKey={pinShake} />
                   </div>
                   <div>
                     <p className="mb-2 text-[13px] font-medium text-[#383d36]">PIN baru</p>
-                    <PinInput value={pinNew} onChange={setPinNew} />
+                    <PinInput value={pinNew} onChange={setPinNew} shakeKey={pinShake} />
                   </div>
                   <div>
                     <p className="mb-2 text-[13px] font-medium text-[#383d36]">
                       Konfirmasi PIN baru
                     </p>
-                    <PinInput value={pinNewConfirm} onChange={setPinNewConfirm} />
+                    <PinInput
+                      value={pinNewConfirm}
+                      onChange={setPinNewConfirm}
+                      shakeKey={pinShake}
+                    />
                   </div>
                 </>
               )}
