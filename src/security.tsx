@@ -575,9 +575,22 @@ export function PinInput({
   onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void
 }) {
   const hiddenRef = useRef<HTMLInputElement>(null)
+  const prevLen = useRef(value.length)
+  const [revealIdx, setRevealIdx] = useState<number | null>(null)
   useEffect(() => {
     if (autoFocus) hiddenRef.current?.focus()
   }, [autoFocus])
+  useEffect(() => {
+    if (value.length > prevLen.current) {
+      const idx = value.length - 1
+      setRevealIdx(idx)
+      const t = setTimeout(() => setRevealIdx(null), 420)
+      prevLen.current = value.length
+      return () => clearTimeout(t)
+    }
+    prevLen.current = value.length
+    if (value.length === 0) setRevealIdx(null)
+  }, [value])
   const pushDigit = (d: string) => {
     if (value.length < 6) onChange((value + d).slice(0, 6))
   }
@@ -586,16 +599,28 @@ export function PinInput({
     onChange(e.target.value.replace(/\D/g, "").slice(0, 6))
   }
   return (
-    <div className="mx-auto w-full max-w-[320px] space-y-4">
-      <div className="grid grid-cols-6 gap-2.5" onClick={() => hiddenRef.current?.focus()}>
-        {Array.from({ length: 6 }, (_, i) => (
-          <div
-            key={i}
-            className={`grid aspect-square place-items-center rounded-[12px] border text-center text-[20px] font-semibold leading-none transition ${i < value.length ? "border-[#6c8f58] bg-[#eef5e9] text-[#2e4228]" : "border-[#dfe2da] bg-white text-[#8a9188]"}`}
-          >
-            {i < value.length ? "•" : ""}
-          </div>
-        ))}
+    <div className="mx-auto w-full max-w-[340px] space-y-5">
+      <div className="grid grid-cols-6 gap-3" onClick={() => hiddenRef.current?.focus()}>
+        {Array.from({ length: 6 }, (_, i) => {
+          const filled = i < value.length
+          const isRevealed = revealIdx === i && filled
+          return (
+            <div
+              key={i}
+              className={`grid aspect-square place-items-center rounded-[14px] border-2 text-center font-semibold leading-none transition-all ${filled ? "border-[#6c8f58] bg-[#eef5e9] text-[#2e4228] shadow-sm" : "border-[#dfe2da] bg-white"}`}
+            >
+              {filled ? (
+                <span
+                  className={`transition-all duration-150 ${isRevealed ? "scale-110 text-[22px]" : "text-[20px]"}`}
+                >
+                  {isRevealed ? value[i] : "•"}
+                </span>
+              ) : (
+                ""
+              )}
+            </div>
+          )
+        })}
       </div>
       <input
         ref={hiddenRef}
@@ -610,13 +635,13 @@ export function PinInput({
         aria-label="PIN 6 digit"
         autoComplete="off"
       />
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="mx-auto grid max-w-[240px] grid-cols-3 gap-2">
         {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
           <button
             key={d}
             type="button"
             onClick={() => pushDigit(d)}
-            className="grid aspect-square place-items-center rounded-[14px] border border-[#e5e7e0] bg-white text-[20px] font-semibold leading-none text-[#2e332b] shadow-sm transition hover:bg-[#f0f3ec] active:scale-[0.98]"
+            className="grid aspect-square place-items-center rounded-[12px] border border-[#e5e7e0] bg-white text-[18px] font-medium leading-none text-[#2e332b] shadow-sm transition hover:bg-[#f0f3ec] active:scale-[0.96]"
           >
             {d}
           </button>
@@ -625,7 +650,7 @@ export function PinInput({
         <button
           type="button"
           onClick={() => pushDigit("0")}
-          className="grid aspect-square place-items-center rounded-[14px] border border-[#e5e7e0] bg-white text-[20px] font-semibold leading-none text-[#2e332b] shadow-sm transition hover:bg-[#f0f3ec] active:scale-[0.98]"
+          className="grid aspect-square place-items-center rounded-[12px] border border-[#e5e7e0] bg-white text-[18px] font-medium leading-none text-[#2e332b] shadow-sm transition hover:bg-[#f0f3ec] active:scale-[0.96]"
         >
           0
         </button>
@@ -633,7 +658,7 @@ export function PinInput({
           type="button"
           onClick={popDigit}
           aria-label="Hapus"
-          className="grid aspect-square place-items-center rounded-[14px] border border-[#e5e7e0] bg-[#fafbf8] text-[20px] leading-none text-[#6d736a] transition hover:bg-[#eef1eb] active:scale-[0.98]"
+          className="grid aspect-square place-items-center rounded-[12px] border border-[#e5e7e0] bg-[#fafbf8] text-[16px] leading-none text-[#6d736a] transition hover:bg-[#eef1eb] active:scale-[0.96]"
         >
           ⌫
         </button>
